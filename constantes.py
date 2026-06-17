@@ -1,77 +1,70 @@
 """
-PRESTALABS-PLAY - CONSTANTES DEL JUEGO
+KONG ARGENTINO - CONSTANTES DEL JUEGO v3.1
+Creado por Apresta para Prestalabs
 """
 
-VERSION = "1.0.0"
-NOMBRE_JUEGO = "PRESTALABS-PLAY"
+VERSION = "3.1.0"
+NOMBRE_JUEGO = "KONG ARGENTINO"
 
 ANCHO = 1024
 ALTO = 768
 FPS = 60
 
-VIDAS = 9
-VELOCIDAD_JUGADOR = 5
-VELOCIDAD_BARRILES = 2
-GRAVEDAD = 0.6
-SALTO = -12
+VIDAS = 3
+VELOCIDAD_JUGADOR = 6  # Aumentado para mejor respuesta
+VELOCIDAD_JUGADOR_ESCALERA = 4
+VELOCIDAD_BARRILES = 3
+GRAVEDAD = 0.65
+SALTO = -14  # Ajustado para mejor sensación
+SALTO_ESCALERA = -10
 BARRILES_CADA = 80
-TIEMPO_MARTILLO = 180
-PUNTUACION_POR_MONEDA = 10
-PUNTUACION_POR_NIVEL = 500
-PUNTUACION_POR_BARRIL_ROTO = 100
+TIEMPO_PODER = 300
+PUNTUACION_POR_CERVEZA = 10
+PUNTUACION_POR_NIVEL = 1000
+PUNTUACION_POR_BARRIL_ROTO = 150
+MULTIPLICADOR_COMBO_MAX = 5
+TIEMPO_COMBO = 120
+INVENCIBILIDAD_DESPUES_GOLPE = 120  # 2 segundos a 60 FPS
+TIEMPO_RESPAWN = 60
 
-IMAGENES = {
-    'mario_still': 'Assets/still.png',
-    'mario_right': 'Assets/right.png',
-    'mario_right2': 'Assets/right2.png',
-    'mario_left': 'Assets/left.png',
-    'mario_left2': 'Assets/left2.png',
-    'pared': 'Assets/wood_block.png',
-    'escalera': 'Assets/ladder.png',
-    'moneda1': 'Assets/coin1.png',
-    'moneda2': 'Assets/coin2.png',
-    'moneda3': 'Assets/coin3.png',
-    'moneda4': 'Assets/coin4.png',
-    'moneda5': 'Assets/coin5.png',
-    'donkey_kong': 'Assets/kong0.png',
-    'princesa': 'Assets/princess.png',
-    'fondo': 'Assets/background.png',
-    'martillo': 'Assets/hammer.png',
-    'logo': 'Assets/donkeykongtext.png',
-    'start': 'Assets/start.png',
-    'start_hover': 'Assets/start1.png',
-    'exit': 'Assets/exit.png',
-    'exit_hover': 'Assets/exit1.png',
-    'restart': 'Assets/restart.png',
-    'restart_hover': 'Assets/restart1.png',
+# Dificultad por nivel - ajustada para progresión suave
+DIFICULTAD_NIVEL = {
+    1: {'vel_barril': 2.0, 'cadencia': 120, 'max_barriles': 3,  'vel_kong': 0.8},
+    2: {'vel_barril': 2.5, 'cadencia': 100, 'max_barriles': 4,  'vel_kong': 1.0},
+    3: {'vel_barril': 3.0, 'cadencia': 85,  'max_barriles': 5,  'vel_kong': 1.3},
+    4: {'vel_barril': 3.5, 'cadencia': 70,  'max_barriles': 6,  'vel_kong': 1.6},
+    5: {'vel_barril': 4.0, 'cadencia': 55,  'max_barriles': 7,  'vel_kong': 2.0},
 }
 
-SONIDOS = {
-    'salto': 'Assets/jump.wav',
-    'muerte': 'Assets/death.wav',
-    'moneda': 'Assets/coin.wav',
-    'victoria': 'Assets/levelcomplete.wav',
-    'martillo': 'Assets/hammer.wav',
-    'ayuda': 'Assets/help.wav',
-}
-
+# Colores Argentinos
 COLORES = {
-    'cielo': (135, 206, 235),
-    'marrón': (160, 82, 45),
-    'marrón_claro': (205, 133, 63),
-    'rojo': (220, 50, 50),
-    'amarillo': (255, 220, 50),
-    'negro': (0, 0, 0),
-    'blanco': (255, 255, 255),
-    'gris': (150, 150, 150),
-    'oro': (255, 215, 0),
-    'azul': (50, 100, 200),
-    'verde': (50, 200, 50),
+    'cielo':         (117, 190, 218),
+    'blanco':        (255, 255, 255),
+    'negro':         (0, 0, 0),
+    'oro':           (255, 215, 0),
+    'marron':        (101, 67, 33),
+    'verde':         (76, 153, 0),
+    'verde_oscuro':  (30, 100, 0),
+    'azul':          (50, 100, 200),
+    'gris':          (150, 150, 150),
+    'gris_oscuro':   (60, 60, 60),
+    'celeste':       (117, 190, 218),
+    'celeste_oscuro':(70, 140, 180),
+    'amarillo':      (255, 220, 50),
+    'rojo':          (220, 50, 50),
+    'rojo_oscuro':   (150, 20, 20),
+    'marron_claro':  (205, 133, 63),
+    'naranja':       (255, 140, 0),
+    'violeta':       (150, 50, 200),
+    'rosa':          (255, 150, 180),
+    'transparente':  (0, 0, 0, 0),
 }
 
-TAMANO_MARIO = (24, 24)
-TAMANO_BARRIL = (18, 18)
-TAMANO_MONEDA = (14, 14)
-TAMANO_MARTILLO = (16, 16)
-TAMANO_DONKEY = (45, 50)
-TAMANO_PAULINE = (22, 28)
+# Tamaños
+TAMANO_JUGADOR  = (32, 38)
+TAMANO_BARRIL   = (32, 32)
+TAMANO_CERVEZA  = (20, 20)
+TAMANO_PODER    = (24, 24)
+TAMANO_KONG     = (80, 90)
+TAMANO_PRINCESA = (32, 38)
+TAMANO_BORRACHO = (32, 32)

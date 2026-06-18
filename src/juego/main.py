@@ -13,7 +13,8 @@ from gestor_graficos import GestorGraficos
 from entidades import (
     Argentino, BorrachoIA, Plataforma, Escalera, 
     BarrilCerveza, PoderMate, Princesa, KongCervecero, 
-    HinchaBorrachito, SistemaParticulas, TextoFlotante
+    HinchaBorrachito, HinchaArgentina,
+    SistemaParticulas, TextoFlotante
 )
 from niveles.generador import generar_layout_nivel
 
@@ -49,6 +50,7 @@ class KongArgentino:
         self.hincha = None
         self.kong = None
         self.princesa = None
+        self.hincha_argentina = None
 
         self._frame_global = 0
         self._tiempo_resultado = 0
@@ -101,6 +103,14 @@ class KongArgentino:
         self.gestor.argentino = self.argentino
         self.borracho = BorrachoIA(300, ALTO - 70, self.gestor)
         self.hincha = HinchaBorrachito(hincha_pos[0], hincha_pos[1], self.gestor)
+
+        # ─── CREAR HINCHA ARGENTINA ───
+        # FORZAR APARICIÓN EN NIVEL 1 PARA PRUEBAS
+        self.hincha_argentina = HinchaArgentina(ANCHO//2 - 16, ALTO - 120, self.gestor)
+        # Opcional: forzar canto
+        self.hincha_argentina.cantando = True
+        self.hincha_argentina.texto_canto = "🇦🇷 ARGENTINA ARGENTINA 🇦🇷"
+        self.hincha_argentina.tiempo_canto = 9999
 
         self.gestor._fondo_cache.pop(self.nivel, None)
 
@@ -263,6 +273,10 @@ class KongArgentino:
         self.borracho.dibujar(surf_juego)
         if self.hincha:
             self.hincha.dibujar(surf_juego)
+        
+        # ─── DIBUJAR HINCHA ARGENTINA ───
+        if self.hincha_argentina:
+            self.hincha_argentina.dibujar(surf_juego)
 
         self.particulas.dibujar(surf_juego)
         self.dibujar_textos()
@@ -371,7 +385,7 @@ class KongArgentino:
 
     def siguiente_nivel(self):
         self.nivel += 1
-        if self.nivel > 6:  # ¡Ahora 6 niveles!
+        if self.nivel > 6:
             self.estado = "victoria_final"
             if self.puntuacion > self.high_score:
                 self.high_score = self.puntuacion
@@ -399,6 +413,20 @@ class KongArgentino:
         
         if self.hincha:
             self.hincha.update(self.plataformas, self.escaleras, self.barriles)
+        
+        # ─── ACTUALIZAR HINCHA ARGENTINA ───
+        if self.hincha_argentina:
+            self.hincha_argentina.update(self.plataformas, self.escaleras, self.barriles)
+            
+            # Colisión con barriles
+            for b in self.barriles[:]:
+                if self.hincha_argentina.rect.colliderect(b.rect):
+                    self.hincha_argentina.beber_barril()
+                    self.barriles.remove(b)
+                    self.emitir(b.rect.centerx, b.rect.centery, COLORES['amarillo'], 10, 'explosion')
+                    self._otorgar_puntos(30, b.rect.centerx, b.rect.top, COLORES['celeste'],
+                                          texto="🇦🇷 +30 (Hincha Argentina!)")
+                    break
         
         self.princesa.update()
         self.kong.update(self.plataformas)
@@ -475,6 +503,15 @@ class KongArgentino:
                 self.emitir(b.rect.centerx, b.rect.centery, COLORES['amarillo'], 10, 'explosion')
                 self._otorgar_puntos(30, b.rect.centerx, b.rect.top, COLORES['celeste'],
                                       texto="🍺 +30 (Hincha!)")
+                continue
+
+            # ─── HINCHA ARGENTINA BEBE BARRILES ───
+            if self.hincha_argentina and self.hincha_argentina.rect.colliderect(b.rect):
+                self.hincha_argentina.beber_barril()
+                self.barriles.remove(b)
+                self.emitir(b.rect.centerx, b.rect.centery, COLORES['amarillo'], 10, 'explosion')
+                self._otorgar_puntos(30, b.rect.centerx, b.rect.top, COLORES['celeste'],
+                                      texto="🇦🇷 +30 (Hincha Argentina!)")
                 continue
 
             if b.rect.y > ALTO + 60 or b.rect.x < -60 or b.rect.x > ANCHO + 60:

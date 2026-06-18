@@ -7,3 +7,4 @@ from .objetos import (
     PoderMate, Princesa, KongCervecero, HinchaBorrachito
 )
 from .particulas import SistemaParticulas, TextoFlotante
+from .hincha_argentina import HinchaArgentina

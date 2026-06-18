@@ -11,9 +11,10 @@ import pickle
 from constantes import *
 from gestor_graficos import GestorGraficos
 from entidades import (
-    Argentino, BorrachoIA, Plataforma, Escalera, 
-    BarrilCerveza, PoderMate, Princesa, KongCervecero, 
+    Argentino, BorrachoIA, Plataforma, Escalera,
+    BarrilCerveza, PoderMate, Princesa, KongCervecero,
     HinchaBorrachito, HinchaArgentina,
+    HinchaViejoTambor,          # <--- NUEVO
     SistemaParticulas, TextoFlotante
 )
 from niveles.generador import generar_layout_nivel
@@ -51,6 +52,7 @@ class KongArgentino:
         self.kong = None
         self.princesa = None
         self.hincha_argentina = None
+        self.hincha_viejo = None   # <--- NUEVO
 
         self._frame_global = 0
         self._tiempo_resultado = 0
@@ -84,7 +86,7 @@ class KongArgentino:
         self.cervezas = []
         self.textos_flotantes = []
 
-        plat_data, esc_data, cerv_pos, mates_pos, hincha_pos = generar_layout_nivel(self.nivel)
+        plat_data, esc_data, cerv_pos, mates_pos, hincha_pos, hincha_viejo_pos = generar_layout_nivel(self.nivel)
 
         for (x, y, w) in plat_data:
             self.plataformas.append(Plataforma(x, y, w, self.gestor))
@@ -105,12 +107,18 @@ class KongArgentino:
         self.hincha = HinchaBorrachito(hincha_pos[0], hincha_pos[1], self.gestor)
 
         # ─── CREAR HINCHA ARGENTINA ───
-        # FORZAR APARICIÓN EN NIVEL 1 PARA PRUEBAS
         self.hincha_argentina = HinchaArgentina(ANCHO//2 - 16, ALTO - 120, self.gestor)
-        # Opcional: forzar canto
         self.hincha_argentina.cantando = True
         self.hincha_argentina.texto_canto = "🇦🇷 ARGENTINA ARGENTINA 🇦🇷"
         self.hincha_argentina.tiempo_canto = 9999
+
+        # ─── CREAR HINCHA VIEJO CON TAMBOR ───
+        if hincha_viejo_pos:
+            self.hincha_viejo = HinchaViejoTambor(hincha_viejo_pos[0], hincha_viejo_pos[1], self.gestor)
+            print(f"[DEBUG] Hincha viejo creado en ({hincha_viejo_pos[0]}, {hincha_viejo_pos[1]})")
+        else:
+            self.hincha_viejo = None
+            print("[DEBUG] hincha_viejo_pos es None, no se crea")
 
         self.gestor._fondo_cache.pop(self.nivel, None)
 
@@ -278,6 +286,10 @@ class KongArgentino:
         if self.hincha_argentina:
             self.hincha_argentina.dibujar(surf_juego)
 
+        # ─── DIBUJAR HINCHA VIEJO CON TAMBOR ───
+        if self.hincha_viejo:
+            self.hincha_viejo.dibujar(surf_juego)
+
         self.particulas.dibujar(surf_juego)
         self.dibujar_textos()
 
@@ -427,6 +439,20 @@ class KongArgentino:
                     self._otorgar_puntos(30, b.rect.centerx, b.rect.top, COLORES['celeste'],
                                           texto="🇦🇷 +30 (Hincha Argentina!)")
                     break
+
+        # ─── ACTUALIZAR HINCHA VIEJO CON TAMBOR ───
+        if self.hincha_viejo:
+            self.hincha_viejo.update(self.plataformas, self.escaleras, self.barriles)
+
+            # Colisión con barriles
+            for b in self.barriles[:]:
+                if self.hincha_viejo.rect.colliderect(b.rect):
+                    self.hincha_viejo.beber_barril()
+                    self.barriles.remove(b)
+                    self.emitir(b.rect.centerx, b.rect.centery, COLORES['amarillo'], 10, 'explosion')
+                    self._otorgar_puntos(30, b.rect.centerx, b.rect.top, COLORES['celeste'],
+                                         texto="🥁 +30 (Hincha Viejo!)")
+                    break
         
         self.princesa.update()
         self.kong.update(self.plataformas)
@@ -505,14 +531,10 @@ class KongArgentino:
                                       texto="🍺 +30 (Hincha!)")
                 continue
 
-            # ─── HINCHA ARGENTINA BEBE BARRILES ───
-            if self.hincha_argentina and self.hincha_argentina.rect.colliderect(b.rect):
-                self.hincha_argentina.beber_barril()
-                self.barriles.remove(b)
-                self.emitir(b.rect.centerx, b.rect.centery, COLORES['amarillo'], 10, 'explosion')
-                self._otorgar_puntos(30, b.rect.centerx, b.rect.top, COLORES['celeste'],
-                                      texto="🇦🇷 +30 (Hincha Argentina!)")
-                continue
+            # ─── HINCHA ARGENTINA BEBE BARRILES (ya manejado arriba, pero lo dejamos por si acaso) ───
+            # (ya está arriba)
+
+            # ─── HINCHA VIEJO BEBE BARRILES (ya manejado arriba) ───
 
             if b.rect.y > ALTO + 60 or b.rect.x < -60 or b.rect.x > ANCHO + 60:
                 self.barriles.remove(b)

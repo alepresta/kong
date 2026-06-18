@@ -5,7 +5,7 @@ KONG ARGENTINO - GENERADOR DE NIVELES
 from constantes import ANCHO, ALTO
 
 def generar_layout_nivel(nivel):
-    """Devuelve (plataformas_data, escaleras_data, cervezas_pos, mates_pos, hincha_pos)"""
+    """Devuelve (plataformas_data, escaleras_data, cervezas_pos, mates_pos, hincha_pos, hincha_viejo_pos)"""
     plataformas = []
     escaleras = []
 
@@ -32,6 +32,7 @@ def generar_layout_nivel(nivel):
             ],
             'hincha': (350, ALTO-520-30),
             'hincha_argentina': None,  # No aparece en nivel 1
+            'hincha_viejo': (500, ALTO-120-44),  # <--- NUEVO
         },
         # ─── NIVEL 2 ──────────────────────────────────────────────────────
         {
@@ -51,7 +52,8 @@ def generar_layout_nivel(nivel):
                 (ANCHO//2-25, 255, 105),
             ],
             'hincha': (390, ALTO-560-30),
-            'hincha_argentina': (250, ALTO-350-42),  # Posición en plataforma alta
+            'hincha_argentina': (250, ALTO-350-42),
+            'hincha_viejo': (700, ALTO-240-44),
         },
         # ─── NIVEL 3 ──────────────────────────────────────────────────────
         {
@@ -72,6 +74,7 @@ def generar_layout_nivel(nivel):
             ],
             'hincha': (360, ALTO-580-30),
             'hincha_argentina': (150, ALTO-360-42),
+            'hincha_viejo': (420, ALTO-260-44),
         },
         # ─── NIVEL 4 ──────────────────────────────────────────────────────
         {
@@ -92,6 +95,7 @@ def generar_layout_nivel(nivel):
             ],
             'hincha': (390, ALTO-560-30),
             'hincha_argentina': (620, ALTO-340-42),
+            'hincha_viejo': (160, ALTO-230-44),
         },
         # ─── NIVEL 5 ──────────────────────────────────────────────────────
         {
@@ -112,6 +116,7 @@ def generar_layout_nivel(nivel):
             ],
             'hincha': (380, ALTO-580-30),
             'hincha_argentina': (400, ALTO-235-42),
+            'hincha_viejo': (650, ALTO-235-44),
         },
         # ─── NIVEL 6: "EL LABERINTO VERTICAL" ───────────────────────────
         {
@@ -137,6 +142,7 @@ def generar_layout_nivel(nivel):
             ],
             'hincha': (ANCHO//2 - 30, ALTO-670-30),
             'hincha_argentina': (300, ALTO-340-42),
+            'hincha_viejo': (520, ALTO-120-44),
         },
     ]
 
@@ -145,6 +151,7 @@ def generar_layout_nivel(nivel):
     plataformas += lay['p']
     escaleras = lay['e']
     hincha_pos = lay.get('hincha', (ANCHO//2, ALTO-100))
+    hincha_viejo_pos = lay.get('hincha_viejo', (ANCHO//2 - 50, ALTO-120-44))
 
     cervezas = []
     for (px, py, pw) in lay['p']:
@@ -159,4 +166,4 @@ def generar_layout_nivel(nivel):
     if len(lay['p']) > 8:
         mates.append((lay['p'][6][0] + 30, lay['p'][6][1] - 20))
 
-    return plataformas, escaleras, cervezas, mates, hincha_pos
+    return plataformas, escaleras, cervezas, mates, hincha_pos, hincha_viejo_pos

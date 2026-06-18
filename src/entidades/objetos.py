@@ -215,6 +215,8 @@ class Princesa(pygame.sprite.Sprite):
         self.rect = pygame.Rect(x, y, TAMANO_PRINCESA[0], TAMANO_PRINCESA[1])
         self.anim_frame = 0
         self.ondeo = 0
+        # --- NUEVO: Copa del Mundo ---
+        self.tiene_copa = True  # Siempre la tiene al llegar al nivel final
 
     def update(self):
         self.anim_frame += 1
@@ -273,6 +275,34 @@ class Princesa(pygame.sprite.Sprite):
                                 (x + 27, heart_y - 8), (x + 30, heart_y - 10),
                                 (x + 33, heart_y - 8), (x + 33, heart_y - 4), 
                                 (x + 30, heart_y)])
+
+        # ─── COPA DEL MUNDO ──────────────────────────────────────────────
+        if self.tiene_copa:
+            # La copa se dibuja en la mano derecha (posición ajustada)
+            copa_x = x + 28  # mano derecha
+            copa_y = y + 10 + o
+            self.gestor.dibujar_copa_mundo(pantalla, copa_x, copa_y, escala=0.45)
+
+            # Resplandor
+            for r in range(12, 0, -3):
+                alpha = 30 - r * 2
+                pygame.draw.circle(pantalla, (255, 215, 0, alpha), 
+                                  (int(copa_x + 8), int(copa_y + 12)), r)
+
+            # Cuerpo de la copa
+            pygame.draw.ellipse(pantalla, (210, 180, 50), (copa_x + 2, copa_y + 4, 12, 16))
+            pygame.draw.ellipse(pantalla, (255, 215, 0), (copa_x + 3, copa_y + 5, 10, 14))
+            # Base
+            pygame.draw.ellipse(pantalla, (180, 150, 40), (copa_x, copa_y + 18, 16, 6))
+            pygame.draw.ellipse(pantalla, (255, 215, 0), (copa_x + 1, copa_y + 19, 14, 4))
+            # Asas
+            pygame.draw.arc(pantalla, (255, 215, 0), (copa_x - 2, copa_y + 6, 6, 12), 0, math.pi/2, 2)
+            pygame.draw.arc(pantalla, (255, 215, 0), (copa_x + 12, copa_y + 6, 6, 12), math.pi/2, math.pi, 2)
+            # Copa superior (globo)
+            pygame.draw.circle(pantalla, (255, 215, 0), (copa_x + 8, copa_y + 4), 7)
+            pygame.draw.circle(pantalla, (255, 220, 50), (copa_x + 8, copa_y + 4), 5)
+            # Brillo
+            pygame.draw.circle(pantalla, (255, 255, 255, 80), (copa_x + 6, copa_y + 2), 3)
 
 
 class KongCervecero(pygame.sprite.Sprite):
@@ -463,7 +493,7 @@ class KongCervecero(pygame.sprite.Sprite):
                 })
 
 
-# src/entidades/objetos.py - Modificar la clase HinchaBorrachito
+# src/entidades/objetos.py - Modificar la clase HinchaBorrachito (sin cambios relevantes)
 
 class HinchaBorrachito(pygame.sprite.Sprite):
     def __init__(self, x, y, gestor):

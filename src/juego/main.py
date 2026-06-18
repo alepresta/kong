@@ -14,7 +14,7 @@ from entidades import (
     Argentino, BorrachoIA, Plataforma, Escalera,
     BarrilCerveza, PoderMate, Princesa, KongCervecero,
     HinchaBorrachito, HinchaArgentina,
-    HinchaViejoTambor,          # <--- NUEVO
+    HinchaViejoTambor,
     SistemaParticulas, TextoFlotante
 )
 from niveles.generador import generar_layout_nivel
@@ -52,7 +52,7 @@ class KongArgentino:
         self.kong = None
         self.princesa = None
         self.hincha_argentina = None
-        self.hincha_viejo = None   # <--- NUEVO
+        self.hincha_viejo = None
 
         self._frame_global = 0
         self._tiempo_resultado = 0
@@ -362,28 +362,80 @@ class KongArgentino:
                                    COLORES['blanco'], ANCHO//2, ALTO//2 + 80, centro=True)
         self.particulas.dibujar(self.pantalla)
 
+    # ─── NUEVA VERSIÓN DE VICTORIA FINAL CON CELEBRACIÓN MUNDIALISTA ───
     def dibujar_victoria_final(self):
+        # Fondo de estadio (gradas)
         self.gestor.dibujar_fondo(self.pantalla, 5)
-        s = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
-        s.fill((0, 0, 0, 155))
-        self.pantalla.blit(s, (0, 0))
+        s_estadio = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
+        for i in range(0, ALTO//2, 10):
+            color = (0, 100, 0) if (i//10) % 2 == 0 else (200, 180, 0)
+            pygame.draw.rect(s_estadio, color, (0, i, ANCHO, 10))
+        self.pantalla.blit(s_estadio, (0, 0))
+        
+        oscuro = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
+        oscuro.fill((0, 0, 0, 150))
+        self.pantalla.blit(oscuro, (0, 0))
 
         t = self._frame_global
-        scale = 1.0 + 0.04 * math.sin(t * 0.06)
-        tam = int(58 * scale)
-        col_cycle = [COLORES['oro'], COLORES['amarillo'], COLORES['celeste'], COLORES['blanco']]
-        col = col_cycle[(t // 20) % 4]
-        self.gestor.dibujar_texto(self.pantalla, "🏆 ¡GANASTE! 🏆", tam, col,
-                                   ANCHO//2, ALTO//2 - 140, centro=True, sombra=True)
-        self.gestor.dibujar_texto(self.pantalla, "¡RESCATASTE A LA PRINCESA!", 36,
-                                   COLORES['blanco'], ANCHO//2, ALTO//2 - 70, centro=True, sombra=True)
-        self.gestor.dibujar_texto(self.pantalla, f"PUNTUACIÓN FINAL: {self.puntuacion:06d}", 30,
-                                   COLORES['oro'], ANCHO//2, ALTO//2 - 10, centro=True, sombra=True)
-        if self.puntuacion >= self.high_score:
-            self.gestor.dibujar_texto(self.pantalla, "🏆 ¡NUEVO RÉCORD HISTÓRICO! 🏆", 28,
-                                       COLORES['amarillo'], ANCHO//2, ALTO//2 + 36, centro=True, sombra=True)
+        px = ANCHO // 2
+        py = ALTO // 2 + 60
+        salto = int(math.sin(t * 0.08) * 25)
+        
+        # Pauline (izquierda)
+        self.princesa.rect.centerx = px - 45
+        self.princesa.rect.centery = py + salto
+        self.princesa.dibujar(self.pantalla)
+        
+        # Jugador (derecha)
+        self.argentino.rect.centerx = px + 45
+        self.argentino.rect.centery = py + salto
+        self.argentino.dibujar(self.pantalla)
+        
+        # Copa del Mundo en el centro (más grande y con brillo)
+        copa_x = px
+        copa_y = py - 60 + salto  # Ajuste para subir la copa
+        self.gestor.dibujar_copa_mundo(self.pantalla, copa_x, copa_y, escala=3.0)
+        
+        # Destello en la copa (animado)
+        if t % 20 < 10:
+            glow = pygame.Surface((120, 120), pygame.SRCALPHA)
+            pygame.draw.circle(glow, (255, 255, 200, 80), (60, 60), 60)
+            self.pantalla.blit(glow, (copa_x - 60, copa_y - 80))
+        else:
+            glow = pygame.Surface((80, 80), pygame.SRCALPHA)
+            pygame.draw.circle(glow, (255, 255, 200, 40), (40, 40), 40)
+            self.pantalla.blit(glow, (copa_x - 40, copa_y - 60))
+        
+        # Textos épicos
+        escala_tit = 1.0 + 0.05 * math.sin(t * 0.05)
+        tam_tit = int(62 * escala_tit)
+        col_tit = COLORES['oro'] if (t // 20) % 2 == 0 else COLORES['amarillo']
+        self.gestor.dibujar_texto(self.pantalla, "🏆 ¡CAMPEONES DEL MUNDO! 🏆", tam_tit,
+                                   col_tit, ANCHO//2, 80, centro=True, sombra=True)
+        self.gestor.dibujar_texto(self.pantalla, "🇦🇷 ARGENTINA CAMPEÓN 🇦🇷", 40,
+                                   COLORES['celeste'], ANCHO//2, 150, centro=True, sombra=True)
+        frases = ["¡VAMOS CARAJO!", "¡LA COPA ESTÁ EN CASA!", "¡SOMOS CAMPEONES!", "¡DALE DALE!"]
+        frase = frases[(t // 60) % len(frases)]
+        self.gestor.dibujar_texto(self.pantalla, frase, 32,
+                                   COLORES['blanco'], ANCHO//2, 210, centro=True, sombra=True)
+        
+        # Confeti y fuegos artificiales
+        if t % 5 == 0:
+            self.emitir(random.randint(0, ANCHO), random.randint(20, ALTO//2),
+                         random.choice([COLORES['celeste'], COLORES['blanco'],
+                                        COLORES['amarillo'], COLORES['oro'],
+                                        COLORES['rosa'], COLORES['naranja']]),
+                         8, 'fuego_artificial')
+        if t % 12 == 0:
+            for _ in range(10):
+                self.emitir(random.randint(0, ANCHO), random.randint(20, ALTO//2),
+                             random.choice([COLORES['celeste'], COLORES['blanco'],
+                                            COLORES['amarillo'], COLORES['oro']]),
+                             4, 'estrella')
+        
         self.gestor.dibujar_texto(self.pantalla, "ESC  menú principal", 24,
-                                   COLORES['blanco'], ANCHO//2, ALTO//2 + 90, centro=True)
+                                   COLORES['blanco'], ANCHO//2, ALTO-50, centro=True, sombra=True)
+        self.particulas.actualizar()
         self.particulas.dibujar(self.pantalla)
 
     # ──────────────────────── ESTADOS ────────────────────────────── #
@@ -405,12 +457,12 @@ class KongArgentino:
                 self.gestor.reproducir_sonido('record')
             else:
                 self.gestor.reproducir_sonido('victoria_final')
-            for _ in range(60):
+            for _ in range(80):
                 self.emitir(random.randint(0, ANCHO), random.randint(0, ALTO // 2),
                              random.choice([COLORES['oro'], COLORES['celeste'],
                                             COLORES['blanco'], COLORES['amarillo'],
                                             COLORES['rosa'], COLORES['naranja']]),
-                             8, 'fuego_artificial')
+                             6, 'fuego_artificial')
             return
         self.puntuacion += PUNTUACION_POR_NIVEL * self.nivel
         self.crear_nivel()
@@ -530,11 +582,6 @@ class KongArgentino:
                 self._otorgar_puntos(30, b.rect.centerx, b.rect.top, COLORES['celeste'],
                                       texto="🍺 +30 (Hincha!)")
                 continue
-
-            # ─── HINCHA ARGENTINA BEBE BARRILES (ya manejado arriba, pero lo dejamos por si acaso) ───
-            # (ya está arriba)
-
-            # ─── HINCHA VIEJO BEBE BARRILES (ya manejado arriba) ───
 
             if b.rect.y > ALTO + 60 or b.rect.x < -60 or b.rect.x > ANCHO + 60:
                 self.barriles.remove(b)
@@ -693,13 +740,6 @@ class KongArgentino:
 
             elif self.estado == "victoria_final":
                 self.dibujar_victoria_final()
-                if self._frame_global % 18 == 0:
-                    self.emitir(random.randint(50, ANCHO-50),
-                                random.randint(50, ALTO//2),
-                                random.choice([COLORES['oro'], COLORES['celeste'],
-                                               COLORES['blanco'], COLORES['amarillo'],
-                                               COLORES['rosa'], COLORES['naranja']]),
-                                10, 'fuego_artificial')
 
             elif self.estado == "jugando":
                 if not self.pausa:

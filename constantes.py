@@ -1,9 +1,9 @@
 """
-KONG ARGENTINO - CONSTANTES DEL JUEGO v3.1
+KONG ARGENTINO - CONSTANTES DEL JUEGO v3.2
 Creado por Apresta para Prestalabs
 """
 
-VERSION = "3.1.0"
+VERSION = "3.2.0"
 NOMBRE_JUEGO = "KONG ARGENTINO"
 
 ANCHO = 1024
@@ -11,11 +11,11 @@ ALTO = 768
 FPS = 60
 
 VIDAS = 3
-VELOCIDAD_JUGADOR = 6  # Aumentado para mejor respuesta
+VELOCIDAD_JUGADOR = 6
 VELOCIDAD_JUGADOR_ESCALERA = 4
 VELOCIDAD_BARRILES = 3
 GRAVEDAD = 0.65
-SALTO = -14  # Ajustado para mejor sensación
+SALTO = -14
 SALTO_ESCALERA = -10
 BARRILES_CADA = 80
 TIEMPO_PODER = 300
@@ -24,10 +24,12 @@ PUNTUACION_POR_NIVEL = 1000
 PUNTUACION_POR_BARRIL_ROTO = 150
 MULTIPLICADOR_COMBO_MAX = 5
 TIEMPO_COMBO = 120
-INVENCIBILIDAD_DESPUES_GOLPE = 120  # 2 segundos a 60 FPS
+INVENCIBILIDAD_DESPUES_GOLPE = 120
 TIEMPO_RESPAWN = 60
+TIEMPO_ATAQUE = 20  # Duración del ataque en frames
+DISTANCIA_ATAQUE = 40  # Distancia del hitbox de ataque
 
-# Dificultad por nivel - ajustada para progresión suave
+# Dificultad por nivel
 DIFICULTAD_NIVEL = {
     1: {'vel_barril': 2.0, 'cadencia': 120, 'max_barriles': 3,  'vel_kong': 0.8},
     2: {'vel_barril': 2.5, 'cadencia': 100, 'max_barriles': 4,  'vel_kong': 1.0},

@@ -1,5 +1,5 @@
 """
-KONG ARGENTINO - CLASES DE JUGADORES v3.1
+KONG ARGENTINO - CLASES DE JUGADORES v3.2
 Creado por Apresta para Prestalabs
 """
 import pygame
@@ -30,8 +30,17 @@ class Argentino(pygame.sprite.Sprite):
         self.huellas = []
         self.offset_y = 0
         self.salto_presionado = False
-        self.golpe_anim = 0  # Animación de golpe
+        self.golpe_anim = 0
         self.vel_max = 8
+        
+        # --- NUEVO: Sistema de ataque ---
+        self.ataque_activo = False
+        self.tiempo_ataque = 0
+        self.ataque_cooldown = 0
+        self.ataque_rect = pygame.Rect(0, 0, 40, 40)  # Hitbox del ataque
+        
+        # Animación de ataque
+        self.animacion_ataque = 0
 
     def respawn(self, x, y):
         self.rect.x = x
@@ -45,6 +54,8 @@ class Argentino(pygame.sprite.Sprite):
         self.combo = 0
         self.tiempo_combo = 0
         self.golpe_anim = 20
+        self.ataque_activo = False
+        self.ataque_cooldown = 0
 
     def add_combo(self):
         self.combo = min(self.combo + 1, MULTIPLICADOR_COMBO_MAX)
@@ -52,6 +63,35 @@ class Argentino(pygame.sprite.Sprite):
 
     def get_multiplicador(self):
         return self.combo
+
+    def get_ataque_rect(self):
+        """Devuelve el rectángulo de ataque en la dirección del jugador"""
+        if self.direccion == 1:
+            return pygame.Rect(
+                self.rect.right,
+                self.rect.y + 5,
+                DISTANCIA_ATAQUE,
+                self.rect.height - 10
+            )
+        else:
+            return pygame.Rect(
+                self.rect.left - DISTANCIA_ATAQUE,
+                self.rect.y + 5,
+                DISTANCIA_ATAQUE,
+                self.rect.height - 10
+            )
+
+    def atacar(self):
+        """Ejecuta un ataque si está disponible"""
+        if self.ataque_cooldown <= 0 and not self.respawneando:
+            self.ataque_activo = True
+            self.tiempo_ataque = TIEMPO_ATAQUE
+            self.ataque_cooldown = 30  # Cooldown de medio segundo
+            self.animacion_ataque = 15
+            self.gestor.reproducir_sonido('golpe')
+            self.ataque_rect = self.get_ataque_rect()
+            return True
+        return False
 
     def update(self, plataformas, escaleras):
         teclas = pygame.key.get_pressed()
@@ -74,11 +114,33 @@ class Argentino(pygame.sprite.Sprite):
                 self.respawneando = False
             return
 
+        # --- SISTEMA DE ATAQUE ---
+        if self.ataque_activo:
+            self.tiempo_ataque -= 1
+            self.ataque_rect = self.get_ataque_rect()
+            if self.tiempo_ataque <= 0:
+                self.ataque_activo = False
+        
+        if self.ataque_cooldown > 0:
+            self.ataque_cooldown -= 1
+        
+        # Animación de ataque
+        if self.animacion_ataque > 0:
+            self.animacion_ataque -= 1
+
+        # --- CONTROLES ---
         # Dirección
         if teclas[pygame.K_LEFT] or teclas[pygame.K_a]:
             self.direccion = -1
         if teclas[pygame.K_RIGHT] or teclas[pygame.K_d]:
             self.direccion = 1
+
+        # ATAQUE CON ESPACIO + DIRECCIÓN (o tecla dedicada)
+        ataque_presionado = teclas[pygame.K_SPACE] and (teclas[pygame.K_LEFT] or teclas[pygame.K_a] or teclas[pygame.K_RIGHT] or teclas[pygame.K_d])
+        ataque_tecla = teclas[pygame.K_z] or teclas[pygame.K_x]  # Teclas Z o X para atacar
+        
+        if (ataque_presionado or ataque_tecla) and not self.respawneando:
+            self.atacar()
 
         # --- DETECCIÓN DE ESCALERA ---
         self.en_escalera = False
@@ -94,26 +156,20 @@ class Argentino(pygame.sprite.Sprite):
         subir = teclas[pygame.K_UP] or teclas[pygame.K_w]
         bajar = teclas[pygame.K_DOWN] or teclas[pygame.K_s]
         
-        # Si está en escalera y presiona arriba/abajo, se mueve verticalmente
         if self.en_escalera and (subir or bajar):
-            # Alinear al centro de la escalera
             if self.escalera_actual:
                 self.rect.centerx = self.escalera_actual.x_visual + 6
             
-            # Movimiento vertical
             if subir:
                 self.rect.y -= VELOCIDAD_JUGADOR_ESCALERA
-                # Límite superior
                 if self.rect.top < self.escalera_actual.y_visual - 5:
                     self.rect.top = self.escalera_actual.y_visual - 5
             if bajar:
                 self.rect.y += VELOCIDAD_JUGADOR_ESCALERA
-                # Límite inferior
                 if self.rect.bottom > self.escalera_actual.y_visual + self.escalera_actual.alto_visual + 10:
                     self.rect.bottom = self.escalera_actual.y_visual + self.escalera_actual.alto_visual + 10
             
-            # Si está en escalera y salta, sale de la escalera
-            if teclas[pygame.K_SPACE] and not self.salto_presionado:
+            if teclas[pygame.K_SPACE] and not self.salto_presionado and not (teclas[pygame.K_LEFT] or teclas[pygame.K_a] or teclas[pygame.K_RIGHT] or teclas[pygame.K_d]):
                 self.vel_y = SALTO_ESCALERA
                 self.en_suelo = False
                 self.en_escalera = False
@@ -127,22 +183,14 @@ class Argentino(pygame.sprite.Sprite):
             return
 
         # --- MOVIMIENTO NORMAL ---
-        # Velocidad horizontal con aceleración
         target_vel_x = 0
         if teclas[pygame.K_LEFT] or teclas[pygame.K_a]:
             target_vel_x = -VELOCIDAD_JUGADOR
         if teclas[pygame.K_RIGHT] or teclas[pygame.K_d]:
             target_vel_x = VELOCIDAD_JUGADOR
         
-        # Aceleración suave
         self.vel_x += (target_vel_x - self.vel_x) * 0.25
-        
-        # Si está en escalera y no presiona arriba/abajo, puede moverse horizontalmente
-        if self.en_escalera and not (subir or bajar):
-            # Permitir movimiento horizontal pero manteniendo posición en escalera
-            pass
 
-        # Movimiento horizontal
         self.rect.x += self.vel_x
         for p in plataformas:
             if self.rect.colliderect(p.rect):
@@ -153,24 +201,24 @@ class Argentino(pygame.sprite.Sprite):
                     self.rect.left = p.rect.right
                     self.vel_x = 0
 
-        # Gravedad y salto
+        # Gravedad y salto (SALTO NORMAL con SPACE solo, sin dirección)
         self.vel_y += GRAVEDAD
         if self.vel_y > 12:
             self.vel_y = 12
         
-        # Salto
+        # Salto - SOLO con SPACE, sin dirección (para no confundir con ataque)
         if teclas[pygame.K_SPACE] and self.en_suelo and not self.salto_presionado:
-            self.vel_y = SALTO
-            self.en_suelo = False
-            self.gestor.reproducir_sonido('salto')
-            self.salto_presionado = True
+            # Verificar que no está atacando con dirección
+            if not (teclas[pygame.K_LEFT] or teclas[pygame.K_a] or teclas[pygame.K_RIGHT] or teclas[pygame.K_d]):
+                self.vel_y = SALTO
+                self.en_suelo = False
+                self.gestor.reproducir_sonido('salto')
+                self.salto_presionado = True
         elif not teclas[pygame.K_SPACE]:
             self.salto_presionado = False
 
-        # Movimiento vertical
         self.rect.y += self.vel_y
 
-        # Colisiones con plataformas (suelo y techo)
         self.en_suelo = False
         for p in plataformas:
             if self.rect.colliderect(p.rect):
@@ -182,7 +230,7 @@ class Argentino(pygame.sprite.Sprite):
                     self.rect.top = p.rect.bottom
                     self.vel_y = 0
 
-        # Límites de pantalla
+        # Límites
         if self.rect.left < 0:
             self.rect.left = 0
             self.vel_x = 0
@@ -204,11 +252,10 @@ class Argentino(pygame.sprite.Sprite):
                 self.tiene_poder = False
                 self.gestor.reproducir_sonido('peligro')
         
-        # Invencibilidad
         if self.invencible > 0:
             self.invencible -= 1
 
-        # Huellas de polvo
+        # Huellas
         if abs(self.vel_x) > 2 and self.en_suelo and self.anim_frame % 5 == 0:
             self.huellas.append({'x': self.rect.centerx, 'y': self.rect.bottom, 'vida': 15})
         for h in self.huellas[:]:
@@ -227,14 +274,13 @@ class Argentino(pygame.sprite.Sprite):
         return False
 
     def dibujar(self, pantalla):
-        # Si está invencible, parpadea
         if self.invencible > 0 and (self.invencible // 4) % 2 == 0:
             return
 
         x, y = self.rect.x, self.rect.y
         d = self.direccion
         
-        # Efecto de golpe (temblor)
+        # Efecto de golpe
         shake_x = random.randint(-2, 2) if self.golpe_anim > 0 else 0
         shake_y = random.randint(-2, 2) if self.golpe_anim > 0 else 0
         x += shake_x
@@ -252,8 +298,37 @@ class Argentino(pygame.sprite.Sprite):
         leg_off = int(math.sin(self.anim_frame * 0.3) * 4) if abs(self.vel_x) > 1 else 0
         offset_y = self.offset_y + shake_y
 
+        # --- DIBUJAR ATAQUE (efecto visual) ---
+        if self.ataque_activo or self.animacion_ataque > 0:
+            # Línea de ataque (golpe)
+            if d == 1:
+                start_x = x + 32
+                end_x = x + 32 + DISTANCIA_ATAQUE
+            else:
+                start_x = x
+                end_x = x - DISTANCIA_ATAQUE
+            
+            # Efecto de "slash"
+            for i in range(3):
+                offset = i * 4 - 4
+                alpha = 150 - i * 40
+                pygame.draw.line(
+                    pantalla,
+                    (255, 255, 255, alpha),
+                    (start_x, y + 19 + offset_y + offset),
+                    (end_x, y + 19 + offset_y - offset),
+                    max(2, 6 - i)
+                )
+            
+            # Círculo de impacto
+            pygame.draw.circle(
+                pantalla,
+                (255, 200, 50, 100),
+                (end_x, y + 19 + offset_y),
+                8 + self.animacion_ataque // 3
+            )
+
         # --- CUERPO ---
-        # Camiseta argentina
         pygame.draw.rect(pantalla, COLORES['celeste'], (x, y + 12 + offset_y, 32, 20))
         pygame.draw.rect(pantalla, COLORES['blanco'], (x, y + 16 + offset_y, 32, 6))
         pygame.draw.rect(pantalla, COLORES['celeste'], (x, y + 20 + offset_y, 32, 4))
@@ -261,25 +336,36 @@ class Argentino(pygame.sprite.Sprite):
         # Cuello
         pygame.draw.rect(pantalla, (220, 200, 180), (x + 12, y + 10 + offset_y, 8, 4))
         
-        # Brazos
-        if abs(self.vel_x) > 1:
-            brazo_off = int(math.sin(self.anim_frame * 0.4) * 3)
+        # Brazos (con animación de ataque)
+        if self.ataque_activo or self.animacion_ataque > 0:
+            # Brazo extendido para ataque
+            if d == 1:
+                pygame.draw.rect(pantalla, (220, 200, 180), (x + 28, y + 12 + offset_y - 4, 16, 6))
+                pygame.draw.circle(pantalla, (220, 200, 180), (x + 44, y + 13 + offset_y), 5)
+                # Puño
+                pygame.draw.circle(pantalla, (200, 180, 160), (x + 46, y + 13 + offset_y), 4)
+            else:
+                pygame.draw.rect(pantalla, (220, 200, 180), (x - 12, y + 12 + offset_y - 4, 16, 6))
+                pygame.draw.circle(pantalla, (220, 200, 180), (x - 12, y + 13 + offset_y), 5)
+                pygame.draw.circle(pantalla, (200, 180, 160), (x - 14, y + 13 + offset_y), 4)
+            
+            # Brazo trasero
+            pygame.draw.rect(pantalla, (220, 200, 180), (x - 4, y + 14 + offset_y, 6, 14))
+            pygame.draw.circle(pantalla, (220, 200, 180), (x - 1, y + 28 + offset_y), 4)
         else:
-            brazo_off = 0
-        
-        # Brazo izquierdo
-        pygame.draw.rect(pantalla, (220, 200, 180), (x - 4, y + 14 + offset_y + brazo_off, 6, 14))
-        pygame.draw.circle(pantalla, (220, 200, 180), (x - 1, y + 28 + offset_y + brazo_off), 4)
-        
-        # Brazo derecho
-        pygame.draw.rect(pantalla, (220, 200, 180), (x + 30, y + 14 + offset_y - brazo_off, 6, 14))
-        pygame.draw.circle(pantalla, (220, 200, 180), (x + 33, y + 28 + offset_y - brazo_off), 4)
+            # Brazos normales
+            if abs(self.vel_x) > 1:
+                brazo_off = int(math.sin(self.anim_frame * 0.4) * 3)
+            else:
+                brazo_off = 0
+            
+            pygame.draw.rect(pantalla, (220, 200, 180), (x - 4, y + 14 + offset_y + brazo_off, 6, 14))
+            pygame.draw.circle(pantalla, (220, 200, 180), (x - 1, y + 28 + offset_y + brazo_off), 4)
+            pygame.draw.rect(pantalla, (220, 200, 180), (x + 30, y + 14 + offset_y - brazo_off, 6, 14))
+            pygame.draw.circle(pantalla, (220, 200, 180), (x + 33, y + 28 + offset_y - brazo_off), 4)
 
         # --- CABEZA ---
-        # Cara
         pygame.draw.circle(pantalla, (255, 215, 180), (x + 16, y + 8 + offset_y), 10)
-        
-        # Pelo
         pygame.draw.ellipse(pantalla, (30, 30, 30), (x + 6, y - 2 + offset_y, 20, 10))
         pygame.draw.ellipse(pantalla, (50, 50, 50), (x + 8, y - 4 + offset_y, 16, 8))
         
@@ -304,7 +390,11 @@ class Argentino(pygame.sprite.Sprite):
         pygame.draw.circle(pantalla, COLORES['blanco'], (x + 20 + ojo_x, y + 5 + offset_y), 1)
 
         # Boca
-        if self.vel_y < -3:
+        if self.ataque_activo or self.animacion_ataque > 0:
+            # Grito de ataque
+            pygame.draw.ellipse(pantalla, (200, 50, 50), (x + 12, y + 10 + offset_y, 8, 6))
+            pygame.draw.ellipse(pantalla, (200, 80, 80), (x + 13, y + 11 + offset_y, 6, 4))
+        elif self.vel_y < -3:
             pygame.draw.ellipse(pantalla, COLORES['negro'], (x + 12, y + 10 + offset_y, 8, 5))
             pygame.draw.ellipse(pantalla, (200, 100, 100), (x + 13, y + 11 + offset_y, 6, 3))
         else:
@@ -344,6 +434,14 @@ class Argentino(pygame.sprite.Sprite):
             pygame.draw.circle(pantalla, col, (x + 36, y), 12)
             self.gestor.dibujar_texto(pantalla, f"x{self.combo}", 14, COLORES['blanco'],
                                       x + 36, y - 2, centro=True)
+
+        # --- Indicador de ataque (cooldown) ---
+        if self.ataque_cooldown > 0:
+            # Pequeña barra de cooldown
+            cooldown_bar = 30 - self.ataque_cooldown
+            bar_width = 20
+            pygame.draw.rect(pantalla, COLORES['negro'], (x + 6, y - 8, bar_width, 4))
+            pygame.draw.rect(pantalla, COLORES['amarillo'], (x + 6, y - 8, cooldown_bar * bar_width // 30, 4))
 
 
 class BorrachoIA(pygame.sprite.Sprite):
@@ -386,7 +484,6 @@ class BorrachoIA(pygame.sprite.Sprite):
         elif self.estado == "celebrando":
             self.vel_x = 0
 
-        # Detección de escalera
         self.en_escalera = False
         self.escalera_actual = None
         for e in escaleras:
@@ -395,9 +492,7 @@ class BorrachoIA(pygame.sprite.Sprite):
                 self.escalera_actual = e
                 break
 
-        # Subir escalera si está cerca de una y hay barril arriba
         if self.en_escalera and self.escalera_actual:
-            # Buscar barriles arriba
             barril_arriba = any(
                 b.rect.y < self.rect.y - 50 
                 for b in barriles

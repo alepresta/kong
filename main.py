@@ -1,6 +1,6 @@
 """
-KONG ARGENTINO v3.1 - ¡Rescata a la princesa del Kong cervecero!
-Gráficos mejorados - Creado por Apresta para Prestalabs
+KONG ARGENTINO v3.2 - ¡Rescata a la princesa del Kong cervecero!
+Creado por Apresta para Prestalabs
 """
 import pygame
 import sys
@@ -13,7 +13,7 @@ from objetos import Plataforma, Escalera, BarrilCerveza, PoderMate, Princesa, Ko
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  SISTEMA DE PARTÍCULAS MEJORADO
+#  SISTEMA DE PARTÍCULAS
 # ─────────────────────────────────────────────────────────────────────────────
 class SistemaParticulas:
     def __init__(self, gestor):
@@ -58,6 +58,13 @@ class SistemaParticulas:
                 vy = math.sin(ang) * spd - 1
                 vida = random.randint(10, 20)
                 tam = random.randint(2, 4)
+            elif fuente == 'ataque':
+                ang = random.uniform(-math.pi/3, math.pi/3)
+                spd = random.uniform(2, 6)
+                vx = math.cos(ang) * spd
+                vy = math.sin(ang) * spd - 2
+                vida = random.randint(15, 25)
+                tam = random.randint(3, 6)
             else:
                 vx, vy, vida, tam = random.uniform(-2, 2), random.uniform(-3, -1), 20, 3
             self.particulas.append({
@@ -113,7 +120,7 @@ class TextoFlotante:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  GENERADOR DE NIVELES
+#  GENERADOR DE NIVELES (sin cambios)
 # ─────────────────────────────────────────────────────────────────────────────
 def generar_layout_nivel(nivel):
     """Devuelve (plataformas_data, escaleras_data, cervezas_pos, mates_pos)"""
@@ -124,7 +131,7 @@ def generar_layout_nivel(nivel):
     plataformas.append((0, ALTO - 40, ANCHO))
 
     layouts = [
-        # Nivel 1 - clásico simétrico
+        # Nivel 1
         {
             'p': [
                 (80, ALTO-120, 180), (320, ALTO-120, 180), (560, ALTO-120, 180), (800, ALTO-120, 150),
@@ -221,7 +228,6 @@ def generar_layout_nivel(nivel):
     plataformas += lay['p']
     escaleras = lay['e']
 
-    # Cervezas - más espaciadas
     cervezas = []
     for (px, py, pw) in lay['p']:
         n = max(1, pw // 60)
@@ -229,7 +235,6 @@ def generar_layout_nivel(nivel):
             cx = px + (i + 1) * pw // (n + 1)
             cervezas.append((cx, py - 20))
 
-    # Mates - 1 o 2 por nivel
     mates = []
     if len(lay['p']) > 4:
         mates.append((lay['p'][2][0] + 30, lay['p'][2][1] - 20))
@@ -274,7 +279,6 @@ class KongArgentino:
         self.princesa = None
 
         self._frame_global = 0
-        self._tiempo_siguiente_barril = 0
         self.crear_nivel()
 
     # ── NIVEL ─────────────────────────────────────────────────────────────────
@@ -305,7 +309,6 @@ class KongArgentino:
         self.argentino = Argentino(100, ALTO - 70, self.gestor)
         self.gestor.argentino = self.argentino
         self.borracho = BorrachoIA(300, ALTO - 70, self.gestor)
-        self._tiempo_siguiente_barril = 0
 
     # ── PARTÍCULAS Y TEXTOS ───────────────────────────────────────────────────
     def emitir(self, x, y, color, n=10, fuente='explosion'):
@@ -326,7 +329,6 @@ class KongArgentino:
 
     # ── HUD ───────────────────────────────────────────────────────────────────
     def dibujar_hud(self):
-        # Barra superior semitransparente
         hud = pygame.Surface((ANCHO, 70), pygame.SRCALPHA)
         for i in range(70):
             alpha = 180 - i
@@ -341,11 +343,13 @@ class KongArgentino:
         self.gestor.dibujar_texto(self.pantalla, f"MEJOR: {self.high_score:06d}", 20,
                                    COLORES['oro'], ANCHO//2, 10, centro=True, sombra=True)
 
-        # Vidas (corazones)
         for i in range(min(self.argentino.vidas, 9)):
             self.gestor.dibujar_corazon(self.pantalla, 30 + i * 34, ALTO - 30)
 
-        # Indicador de poder mate
+        # Controles en HUD
+        self.gestor.dibujar_texto(self.pantalla, "Z/X: Atacar", 14, COLORES['gris'],
+                                   ANCHO//2 - 100, ALTO - 25)
+
         if self.argentino.tiene_poder:
             t_seg = (self.argentino.tiempo_poder // FPS) + 1
             col = COLORES['verde'] if t_seg > 2 else COLORES['rojo']
@@ -357,7 +361,6 @@ class KongArgentino:
             pygame.draw.rect(self.pantalla, COLORES['verde'], (ANCHO-150, 40, ancho_b, 10))
             pygame.draw.rect(self.pantalla, COLORES['blanco'], (ANCHO-152, 38, 130, 14), 2)
 
-        # Combo
         if self.argentino.combo >= 2:
             colores = [COLORES['amarillo'], COLORES['naranja'], 
                        COLORES['rojo'], COLORES['violeta'], COLORES['oro']]
@@ -365,7 +368,6 @@ class KongArgentino:
             self.gestor.dibujar_texto(self.pantalla, f"🔥 COMBO x{self.argentino.combo}! 🔥", 28,
                                        col, ANCHO//2, 36, centro=True, sombra=True)
 
-        # Barra de borrachera
         if self.borracho.nivel_borrachera > 0:
             bx = ANCHO - 170
             self.gestor.dibujar_texto(self.pantalla, "🍺 BORRACHERA:", 14, COLORES['blanco'], 
@@ -376,7 +378,6 @@ class KongArgentino:
             pygame.draw.rect(self.pantalla, col_b, (bx, ALTO - 32, ab, 12))
             pygame.draw.rect(self.pantalla, COLORES['blanco'], (bx, ALTO - 32, 90, 12), 1)
 
-        # Nombre juego
         self.gestor.dibujar_texto(self.pantalla, NOMBRE_JUEGO, 14, COLORES['gris'], 
                                   ANCHO-140, ALTO-18)
 
@@ -403,6 +404,10 @@ class KongArgentino:
         self.particulas.dibujar(self.pantalla)
         self.dibujar_textos()
         self.dibujar_hud()
+
+        # DEBUG: Dibujar hitbox de ataque (opcional, desactivar en producción)
+        # if self.argentino.ataque_activo:
+        #     pygame.draw.rect(self.pantalla, (255, 0, 0, 100), self.argentino.ataque_rect, 2)
 
         if self.pausa:
             s = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
@@ -475,7 +480,6 @@ class KongArgentino:
     def siguiente_nivel(self):
         self.nivel += 1
         if self.nivel > 5:
-            # Victoria final
             self.estado = "victoria_final"
             return
         self.puntuacion += PUNTUACION_POR_NIVEL * self.nivel
@@ -499,12 +503,10 @@ class KongArgentino:
         for pm in self.poderes:
             pm.update()
 
-        # Detectar si Kong está cerca
         dist_kong = math.hypot(self.argentino.rect.x - self.kong.rect.x,
                                self.argentino.rect.y - self.kong.rect.y)
         self.kong.set_mario_cerca(dist_kong < 250)
 
-        # Lanzar barriles
         cfg = DIFICULTAD_NIVEL.get(self.nivel, DIFICULTAD_NIVEL[5])
         if (self.kong.tiempo_barril > self.kong.get_tiempo_barril()
                 and len(self.barriles) < cfg['max_barriles']):
@@ -512,7 +514,6 @@ class KongArgentino:
             self.barriles.append(barril)
             self.kong.tiempo_barril = 0
 
-        # Actualizar barriles
         for b in self.barriles[:]:
             b.update(self.plataformas, self.escaleras)
             if b.rect.y > ALTO + 60 or b.rect.x < -60 or b.rect.x > ANCHO + 60:
@@ -544,17 +545,35 @@ class KongArgentino:
                 self.texto_flotante("🧉 ¡MATE POWER! 🧉", p.rect.centerx, p.rect.top - 10,
                                     COLORES['verde'], 28)
 
-        # Barriles contra jugador
+        # ─── BARRILES VS JUGADOR (CON ATAQUE Y SALTO) ───
         for b in self.barriles[:]:
+            # 1. Verificar si el jugador golpea el barril con ataque
+            if self.argentino.ataque_activo and self.argentino.ataque_rect.colliderect(b.rect):
+                self._otorgar_puntos(PUNTUACION_POR_BARRIL_ROTO,
+                                      b.rect.centerx, b.rect.top,
+                                      COLORES['naranja'])
+                self.barriles.remove(b)
+                self.emitir(b.rect.centerx, b.rect.centery, COLORES['marron'], 15, 'explosion')
+                self.emitir(b.rect.centerx, b.rect.centery, COLORES['amarillo'], 10, 'ataque')
+                self.gestor.reproducir_sonido('golpe')
+                self.texto_flotante("💥 ¡BARRIL ROTO! 💥", b.rect.centerx, b.rect.top - 10,
+                                    COLORES['naranja'], 24)
+                continue
+
+            # 2. Verificar si el jugador es golpeado por el barril
+            # Usamos un margen de seguridad para que sea más fácil saltar barriles
+            # Solo golpea si el jugador está en el camino del barril y no saltó
             if self.argentino.rect.colliderect(b.rect):
                 if self.argentino.tiene_poder:
+                    # Con poder, rompe el barril automáticamente
                     self._otorgar_puntos(PUNTUACION_POR_BARRIL_ROTO,
                                           b.rect.centerx, b.rect.top,
-                                          COLORES['naranja'])
+                                          COLORES['verde'])
                     self.barriles.remove(b)
-                    self.emitir(b.rect.centerx, b.rect.centery, COLORES['marron'], 15, 'explosion')
+                    self.emitir(b.rect.centerx, b.rect.centery, COLORES['verde'], 15, 'explosion')
                     self.gestor.reproducir_sonido('golpe')
                 else:
+                    # Golpe normal
                     if self.argentino.golpear():
                         self.emitir(self.argentino.rect.centerx, self.argentino.rect.centery,
                                     COLORES['rojo'], 20, 'golpe')
@@ -671,7 +690,7 @@ class KongArgentino:
 if __name__ == "__main__":
     print("""
     ╔═══════════════════════════════════════════════════════════════╗
-    ║          KONG ARGENTINO v3.1 - Gráficos Mejorados            ║
+    ║          KONG ARGENTINO v3.2 - Gráficos Mejorados            ║
     ║                   Creado por Apresta                         ║
     ║                   para PRESTALABS                            ║
     ╠═══════════════════════════════════════════════════════════════╣
@@ -682,6 +701,7 @@ if __name__ == "__main__":
     ║   W/↑        : Subir escalera                               ║
     ║   S/↓        : Bajar escalera                               ║
     ║   ESPACIO    : Saltar                                        ║
+    ║   Z o X      : Atacar (golpear barriles)                    ║
     ║   P          : Pausar                                        ║
     ║   ESC        : Menú                                          ║
     ╚═══════════════════════════════════════════════════════════════╝

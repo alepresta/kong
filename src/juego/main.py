@@ -1,27 +1,6 @@
 # src/juego/main.py
 """
 KONG ARGENTINO v4.0 - JUEGO PRINCIPAL
-Mejoras v4.0:
-- High score persistente en archivo
-- Estado 'victoria_final' con pantalla especial
-- Camera shake al recibir golpe
-- Flash de pantalla al golpe / game over
-- Detección de barril saltado → bonus de puntos
-- Control de volumen con [ ] en cualquier momento
-- ESC en game_over/victoria vuelve al menú directamente
-- Pausa muestra controles resumidos
-- Performance: tick() del gestor centralizado
-
-Mejoras v4.1:
-- Ataque en 4 direcciones (arriba, abajo, izquierda, derecha)
-- Brazo de ataque más largo
-- Salto más alto y caída más lenta
-- Puede golpear a Kong, hinchas y borracho
-
-Mejoras v4.2:
-- Hinchas no mueren al ser golpeados, solo retroceden
-- Hinchas buscan barriles activamente
-- Sistema de estados para hinchas (buscando, golpeado, tambaleando)
 """
 import pygame
 import sys
@@ -49,7 +28,6 @@ class KongArgentino:
         self.clock = pygame.time.Clock()
         self.gestor = GestorGraficos()
         self.particulas = SistemaParticulas(self.gestor)
-        # Asignar la lista de partículas y el sistema al gestor
         self.gestor.particulas = self.particulas.particulas
         self.gestor.sistema_particulas = self.particulas
         self.textos_flotantes = []
@@ -73,7 +51,6 @@ class KongArgentino:
         self.princesa = None
 
         self._frame_global = 0
-        # Tiempo de pantalla de victoria/game over antes de aceptar input
         self._tiempo_resultado = 0
         self.crear_nivel()
 
@@ -125,7 +102,6 @@ class KongArgentino:
         self.borracho = BorrachoIA(300, ALTO - 70, self.gestor)
         self.hincha = HinchaBorrachito(hincha_pos[0], hincha_pos[1], self.gestor)
 
-        # Invalidar caché de fondo si cambia nivel
         self.gestor._fondo_cache.pop(self.nivel, None)
 
     # ──────────────────────── HELPERS ────────────────────────────── #
@@ -155,38 +131,26 @@ class KongArgentino:
                             tamaño=18 + min(multi * 2, 10))
 
     def _golpear_kong(self):
-        """Función para golpear a Kong"""
         self.gestor.iniciar_shake(10, 4)
         self.gestor.iniciar_flash((255, 200, 50), 6)
         self.emitir(self.kong.rect.centerx, self.kong.rect.centery,
                     COLORES['oro'], 20, 'explosion')
         self.gestor.reproducir_sonido('golpe')
-        
-        # Kong se enoja más
         self.kong.tiempo_enojado = max(self.kong.tiempo_enojado, 40)
-        
-        # Puntos por golpear a Kong
         self._otorgar_puntos(100, self.kong.rect.centerx, self.kong.rect.top,
                              COLORES['oro'], texto="👊 ¡GOLPE A KONG! +100")
         self.texto_flotante("💢 ¡KONG ENOJADO!", self.kong.rect.centerx, 
                             self.kong.rect.top - 20, COLORES['rojo'], 24)
 
     def _golpear_borracho(self):
-        """Función para golpear al borracho"""
         self.emitir(self.borracho.rect.centerx, self.borracho.rect.centery,
                     COLORES['amarillo'], 15, 'golpe')
         self.gestor.reproducir_sonido('golpe')
-        
-        # El borracho pierde nivel de borrachera y puede caer
         self.borracho.nivel_borrachera = max(0, self.borracho.nivel_borrachera - 2)
         self.borracho.estado = "buscando"
         self.borracho.tiempo_estado = 30
-        
-        # Puntos por golpear al borracho
         self._otorgar_puntos(30, self.borracho.rect.centerx, self.borracho.rect.top,
                              COLORES['celeste'], texto="👊 ¡GOLPE AL BORRACHO! +30")
-        
-        # Si el borracho tiene mucha borrachera, se tambalea más
         if self.borracho.nivel_borrachera >= 6:
             self.borracho.vel_x = random.choice([-4, -3, 3, 4])
             self.borracho.vel_y = -3
@@ -196,22 +160,13 @@ class KongArgentino:
                                COLORES['naranja'], 20)
 
     def _golpear_hincha(self):
-        """Función para golpear al hincha - NO MUERE, solo retrocede"""
         hx, hy, htop = self.hincha.rect.centerx, self.hincha.rect.centery, self.hincha.rect.top
-        
-        # El hincha recibe el golpe pero NO muere
         self.hincha.recibir_golpe()
-        
-        # Efectos visuales
         self.emitir(hx, hy, COLORES['rojo'], 15, 'golpe')
         self.emitir(hx, hy, COLORES['amarillo'], 8, 'chispa')
         self.gestor.reproducir_sonido('hincha_golpe')
-        
-        # Puntos por golpear al hincha
         self._otorgar_puntos(30, hx, htop, COLORES['celeste'], 
                              texto="👊 ¡GOLPE AL HINCHA! +30")
-        
-        # Mensaje extra si está muy borracho
         if self.hincha.nivel_borrachera >= 7:
             self.texto_flotante("🍺 ¡HINCHA RE BORRACHO!", hx, htop - 20,
                                COLORES['naranja'], 20)
@@ -219,7 +174,6 @@ class KongArgentino:
     # ──────────────────────── HUD ────────────────────────────────── #
 
     def dibujar_hud(self):
-        # Barra superior semitransparente
         hud = pygame.Surface((ANCHO, 70), pygame.SRCALPHA)
         for i in range(70):
             alpha = 185 - i * 2
@@ -234,20 +188,16 @@ class KongArgentino:
         self.gestor.dibujar_texto(self.pantalla, f"MEJOR: {self.high_score:06d}", 20,
                                    COLORES['oro'], ANCHO//2, 10, centro=True, sombra=True)
 
-        # Vidas como corazones
         for i in range(min(self.argentino.vidas, 9)):
             self.gestor.dibujar_corazon(self.pantalla, 30 + i * 34, ALTO - 30)
 
-        # Hint de controles
         self.gestor.dibujar_texto(self.pantalla, "ESPACIO: Atacar (↑↓←→)  [ ]: Volumen", 13,
                                    COLORES['gris'], ANCHO//2 - 150, ALTO - 22)
 
-        # Barra de mate power
         if self.argentino.tiene_poder:
             t_seg = (self.argentino.tiempo_poder // FPS) + 1
             pct = self.argentino.tiempo_poder / TIEMPO_PODER
             col = COLORES['verde'] if pct > 0.3 else COLORES['rojo']
-            # Parpadea cuando queda poco
             if pct < 0.2 and (self._frame_global // 8) % 2 == 0:
                 self.gestor.reproducir_sonido('poder_acabando')
             self.gestor.dibujar_texto(self.pantalla, f"🧉 MATE {t_seg}s", 22, col,
@@ -258,17 +208,14 @@ class KongArgentino:
             pygame.draw.rect(self.pantalla, col, (ANCHO-150, 40, ancho_b, 10))
             pygame.draw.rect(self.pantalla, COLORES['blanco'], (ANCHO-152, 38, 130, 14), 2)
 
-        # Combo
         if self.argentino.combo >= 2:
             colores_combo = [COLORES['amarillo'], COLORES['naranja'], 
                              COLORES['rojo'], COLORES['violeta'], COLORES['oro']]
             col = colores_combo[min(self.argentino.combo - 2, 4)]
-            # Pulso de tamaño
             tam = 28 + int(math.sin(self._frame_global * 0.3) * 3)
             self.gestor.dibujar_texto(self.pantalla, f"🔥 COMBO x{self.argentino.combo}! 🔥", tam,
                                        col, ANCHO//2, 36, centro=True, sombra=True)
 
-        # Barra de borrachera del borracho
         if self.borracho.nivel_borrachera > 0:
             bx = ANCHO - 170
             self.gestor.dibujar_texto(self.pantalla, "🍺 BORRACHERA:", 14, COLORES['blanco'], 
@@ -279,7 +226,6 @@ class KongArgentino:
             pygame.draw.rect(self.pantalla, col_b, (bx, ALTO - 32, ab, 12))
             pygame.draw.rect(self.pantalla, COLORES['blanco'], (bx, ALTO - 32, 90, 12), 1)
 
-        # Barra de borrachera del hincha
         if self.hincha and self.hincha.nivel_borrachera > 0:
             bx = ANCHO - 170
             self.gestor.dibujar_texto(self.pantalla, "🍺 HINCHA:", 14, COLORES['blanco'], 
@@ -290,7 +236,6 @@ class KongArgentino:
             pygame.draw.rect(self.pantalla, col_b, (bx, ALTO - 2, ab, 12))
             pygame.draw.rect(self.pantalla, COLORES['blanco'], (bx, ALTO - 2, 90, 12), 1)
 
-        # Watermark
         self.gestor.dibujar_texto(self.pantalla, NOMBRE_JUEGO, 13, COLORES['gris_oscuro'], 
                                   ANCHO-142, ALTO-18)
 
@@ -298,7 +243,6 @@ class KongArgentino:
 
     def dibujar(self):
         ox, oy = self.gestor.get_shake()
-        # Aplicamos shake al blit principal desplazando todo
         surf_juego = pygame.Surface((ANCHO, ALTO))
         self.gestor.dibujar_fondo(surf_juego, self.nivel)
 
@@ -399,7 +343,6 @@ class KongArgentino:
         self.pantalla.blit(s, (0, 0))
 
         t = self._frame_global
-        # Titulo pulsante
         scale = 1.0 + 0.04 * math.sin(t * 0.06)
         tam = int(58 * scale)
         col_cycle = [COLORES['oro'], COLORES['amarillo'], COLORES['celeste'], COLORES['blanco']]
@@ -428,7 +371,7 @@ class KongArgentino:
 
     def siguiente_nivel(self):
         self.nivel += 1
-        if self.nivel > 5:
+        if self.nivel > 6:  # ¡Ahora 6 niveles!
             self.estado = "victoria_final"
             if self.puntuacion > self.high_score:
                 self.high_score = self.puntuacion
@@ -436,7 +379,6 @@ class KongArgentino:
                 self.gestor.reproducir_sonido('record')
             else:
                 self.gestor.reproducir_sonido('victoria_final')
-            # Fuegos artificiales
             for _ in range(60):
                 self.emitir(random.randint(0, ANCHO), random.randint(0, ALTO // 2),
                              random.choice([COLORES['oro'], COLORES['celeste'],
@@ -455,7 +397,6 @@ class KongArgentino:
         self.argentino.update(self.plataformas, self.escaleras)
         self.borracho.update(self.plataformas, self.escaleras, self.barriles)
         
-        # Actualizar hincha con plataformas y barriles para que busque
         if self.hincha:
             self.hincha.update(self.plataformas, self.escaleras, self.barriles)
         
@@ -468,7 +409,6 @@ class KongArgentino:
 
         cfg = DIFICULTAD_NIVEL.get(self.nivel, DIFICULTAD_NIVEL[5])
 
-        # Lanzar barriles
         if (self.kong.tiempo_barril > self.kong.get_tiempo_barril()
                 and len(self.barriles) < cfg['max_barriles']):
             barril = self.kong.lanzar_barril()
@@ -485,7 +425,6 @@ class KongArgentino:
                 self.barriles.remove(b)
                 continue
 
-            # Detección de salto sobre barril (bonus sin poder)
             if (not self.argentino.tiene_poder
                     and self.argentino.vel_y > 0
                     and not self.argentino.en_suelo
@@ -496,7 +435,6 @@ class KongArgentino:
                                       COLORES['cyan'], texto="¡SALTO! +25")
                 self.gestor.reproducir_sonido('barril_saltado')
 
-            # Colisión jugador - barril
             if self.argentino.rect.colliderect(b.rect):
                 if self.argentino.tiene_poder:
                     self._otorgar_puntos(PUNTUACION_POR_BARRIL_ROTO,
@@ -523,7 +461,6 @@ class KongArgentino:
                         self.barriles.remove(b)
                 continue
 
-            # Borracho toma barril
             if self.borracho.rect.colliderect(b.rect):
                 self.borracho.beber_barril()
                 self.barriles.remove(b)
@@ -532,7 +469,6 @@ class KongArgentino:
                                       texto="🍺 +50 (Borracho!)")
                 continue
 
-            # Hincha toma barril
             if self.hincha and self.hincha.rect.colliderect(b.rect):
                 self.hincha.beber_barril()
                 self.barriles.remove(b)
@@ -541,7 +477,6 @@ class KongArgentino:
                                       texto="🍺 +30 (Hincha!)")
                 continue
 
-            # Barril sale de la pantalla
             if b.rect.y > ALTO + 60 or b.rect.x < -60 or b.rect.x > ANCHO + 60:
                 self.barriles.remove(b)
                 continue
@@ -575,24 +510,20 @@ class KongArgentino:
                 self.texto_flotante("🧉 ¡MATE POWER! 🧉", p.rect.centerx, p.rect.top - 10,
                                     COLORES['verde'], 28)
 
-        # ── SISTEMA DE ATAQUE MEJORADO ──
-        # Golpear con el ataque activo
+        # ── ATAQUE ──
         if self.argentino.ataque_activo:
             ataque_rect = self.argentino.ataque_rect
             
-            # Golpear al Kong
             if ataque_rect.colliderect(self.kong.rect):
                 self._golpear_kong()
             
-            # Golpear al borracho
             if ataque_rect.colliderect(self.borracho.rect):
                 self._golpear_borracho()
             
-            # Golpear al hincha - AHORA NO MUERE, solo retrocede
             if self.hincha and ataque_rect.colliderect(self.hincha.rect):
                 self._golpear_hincha()
 
-        # ── Colisión jugador - Kong (sin ataque) ──
+        # ── Colisión jugador - Kong ──
         if self.argentino.rect.colliderect(self.kong.rect):
             if not self.argentino.tiene_poder and not self.argentino.ataque_activo:
                 if self.argentino.golpear():
@@ -640,7 +571,7 @@ class KongArgentino:
             self.clock.tick(FPS)
             self._frame_global += 1
             self._tiempo_resultado += 1
-            self.gestor.tick()   # actualiza shake, flash, etc.
+            self.gestor.tick()
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -651,7 +582,6 @@ class KongArgentino:
                 if event.type == pygame.KEYDOWN:
                     key = event.key
 
-                    # Volumen global (en cualquier estado)
                     if key == pygame.K_LEFTBRACKET:
                         self.gestor.generador_sonidos.set_volumen(
                             self.gestor.generador_sonidos.volumen_maestro - 0.1)
@@ -667,7 +597,6 @@ class KongArgentino:
                     if key == pygame.K_p and self.estado == "jugando":
                         self.pausa = not self.pausa
 
-                    # R solo acepta input pasados 30 frames (evita skip accidental)
                     if key == pygame.K_r and self._tiempo_resultado > 30:
                         if self.estado == "game_over":
                             self.reiniciar_juego()
@@ -690,11 +619,9 @@ class KongArgentino:
                         pygame.quit()
                         sys.exit()
 
-            # ── Actualizar partículas ──
             self.particulas.actualizar()
             self.actualizar_textos()
 
-            # ── Render según estado ──
             if self.estado == "menu":
                 self.pantalla.fill((0, 0, 0))
                 self.dibujar_menu()
@@ -707,7 +634,6 @@ class KongArgentino:
 
             elif self.estado == "victoria_final":
                 self.dibujar_victoria_final()
-                # Fuegos artificiales continuos en victoria final
                 if self._frame_global % 18 == 0:
                     self.emitir(random.randint(50, ANCHO-50),
                                 random.randint(50, ALTO//2),

@@ -1,3 +1,4 @@
+# src/niveles/generador.py
 """
 KONG ARGENTINO - GENERADOR DE NIVELES
 """
@@ -12,7 +13,7 @@ def generar_layout_nivel(nivel):
     plataformas.append((0, ALTO - 40, ANCHO))
 
     layouts = [
-        # Nivel 1
+        # ─── NIVEL 1 ──────────────────────────────────────────────────────
         {
             'p': [
                 (80, ALTO-120, 180), (320, ALTO-120, 180), (560, ALTO-120, 180), (800, ALTO-120, 150),
@@ -31,7 +32,7 @@ def generar_layout_nivel(nivel):
             ],
             'hincha': (350, ALTO-520-30),
         },
-        # Nivel 2
+        # ─── NIVEL 2 ──────────────────────────────────────────────────────
         {
             'p': [
                 (60, ALTO-130, 160), (300, ALTO-130, 160), (580, ALTO-130, 160), (820, ALTO-130, 140),
@@ -50,7 +51,7 @@ def generar_layout_nivel(nivel):
             ],
             'hincha': (390, ALTO-560-30),
         },
-        # Nivel 3
+        # ─── NIVEL 3 ──────────────────────────────────────────────────────
         {
             'p': [
                 (50, ALTO-120, 150), (310, ALTO-150, 150), (560, ALTO-120, 150), (800, ALTO-150, 140),
@@ -69,7 +70,7 @@ def generar_layout_nivel(nivel):
             ],
             'hincha': (360, ALTO-580-30),
         },
-        # Nivel 4
+        # ─── NIVEL 4 ──────────────────────────────────────────────────────
         {
             'p': [
                 (60, ALTO-120, 130), (300, ALTO-120, 130), (520, ALTO-120, 130), (760, ALTO-120, 130),
@@ -88,7 +89,7 @@ def generar_layout_nivel(nivel):
             ],
             'hincha': (390, ALTO-560-30),
         },
-        # Nivel 5
+        # ─── NIVEL 5 ──────────────────────────────────────────────────────
         {
             'p': [
                 (40, ALTO-120, 110), (280, ALTO-120, 110), (490, ALTO-120, 110), (720, ALTO-120, 110), (890, ALTO-120, 100),
@@ -106,6 +107,77 @@ def generar_layout_nivel(nivel):
                 (ANCHO//2-20, 248, 110),
             ],
             'hincha': (380, ALTO-580-30),
+        },
+        # ─── NUEVO NIVEL 6: "EL LABERINTO VERTICAL" ─────────────────────
+        # Nivel estratégico: el jugador debe elegir qué camino tomar
+        {
+            'p': [
+                # ── BASE (suelo fragmentado) ──
+                (20, ALTO-120, 200),          # Izquierda
+                (280, ALTO-120, 180),         # Centro-izquierda
+                (520, ALTO-120, 180),         # Centro-derecha
+                (760, ALTO-120, 244),         # Derecha
+                
+                # ── NIVEL 2 (plataformas en diagonal) ──
+                (80, ALTO-230, 160),          # Izquierda
+                (400, ALTO-230, 180),         # Centro (más grande, punto clave)
+                (780, ALTO-230, 180),         # Derecha
+                
+                # ── NIVEL 3 (plataformas escalonadas) ──
+                (40, ALTO-340, 140),          # Izquierda (pequeña, arriesgada)
+                (300, ALTO-340, 180),         # Centro (segura)
+                (580, ALTO-340, 160),         # Centro-derecha
+                (840, ALTO-340, 140),         # Derecha (pequeña)
+                
+                # ── NIVEL 4 (pasillo angosto) ──
+                (120, ALTO-450, 120),         # Izquierda (angosta)
+                (380, ALTO-450, 160),         # Centro
+                (680, ALTO-450, 160),         # Centro-derecha
+                (880, ALTO-450, 120),         # Derecha (angosta)
+                
+                # ── NIVEL 5 (cerca de Kong) ──
+                (80, ALTO-560, 300),          # Izquierda (grande)
+                (600, ALTO-560, 340),         # Derecha (grande)
+                
+                # ── CIMA (plataforma de Kong) ──
+                (200, ALTO-670, 624),
+            ],
+            'e': [
+                # CAMINO 1: IZQUIERDA (rápido pero peligroso)
+                (60, ALTO-120, 100),
+                (120, ALTO-230, 100),
+                (80, ALTO-340, 100),
+                (160, ALTO-450, 100),
+                (120, ALTO-560, 100),
+                (250, ALTO-670, 100),
+                
+                # CAMINO 2: CENTRO (el más equilibrado)
+                (340, ALTO-120, 100),
+                (450, ALTO-230, 100),
+                (360, ALTO-340, 100),
+                (430, ALTO-450, 100),
+                (180, ALTO-560, 100),
+                (450, ALTO-670, 100),
+                
+                # CAMINO 3: DERECHA (más lento pero con plataformas grandes)
+                (820, ALTO-120, 100),
+                (830, ALTO-230, 100),
+                (870, ALTO-340, 100),
+                (930, ALTO-450, 100),
+                (680, ALTO-560, 100),
+                (650, ALTO-670, 100),
+                
+                # CAMINO 4: ¡ATAJO SECRETO! (salta 3 niveles)
+                (500, ALTO-120, 320),    # Escalera larga nivel 1 -> 4
+                
+                # Escaleras de conexión
+                (230, ALTO-230, 110),    # Izquierda 2->3
+                (680, ALTO-230, 110),    # Derecha 2->3
+                (220, ALTO-340, 110),    # Izquierda 3->4
+                (770, ALTO-340, 110),    # Derecha 3->4
+                (380, ALTO-560, 100),    # Centro 4->5
+            ],
+            'hincha': (ANCHO//2 - 30, ALTO-670-30),
         },
     ]
 

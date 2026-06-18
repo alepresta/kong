@@ -31,33 +31,33 @@ TIEMPO_ATAQUE = 20
 DISTANCIA_ATAQUE = 40
 
 # ─── NUEVAS CONSTANTES v4.0 ──────────────────────────────────────
-PUNTUACION_POR_BARRIL_SALTADO = 25   # puntos por saltar un barril
-TIEMPO_PARPADEO_INVENCIBLE = 4       # frames entre destellos de invencibilidad
-MAX_PARTICULAS = 300                 # límite para no saturar CPU
-TIEMPO_FREEZE_PANTALLA = 8           # frames de freeze al recibir golpe fuerte
-VELOCIDAD_NUBES = 0.3                # velocidad de movimiento de nubes
-TIEMPO_ANIMACION_MUERTE = 90         # frames de animación al morir
-SHAKE_DURACION = 18                  # frames de cámara shake
+PUNTUACION_POR_BARRIL_SALTADO = 25
+TIEMPO_PARPADEO_INVENCIBLE = 4
+MAX_PARTICULAS = 300
+TIEMPO_FREEZE_PANTALLA = 8
+VELOCIDAD_NUBES = 0.3
+TIEMPO_ANIMACION_MUERTE = 90
+SHAKE_DURACION = 18
 SHAKE_INTENSIDAD = 5
 
 # ─── NUEVAS CONSTANTES DE SALTO v4.2 ────────────────────────────
-# Control de salto (valores más bajos = salto más lento/flotante)
-MULTIPLICADOR_GRAVEDAD = 0.3         # Reduce la gravedad (0.3 = caída muy lenta)
-MULTIPLICADOR_SALTO = 0.7            # Reduce la velocidad de salto (0.7 = salto más bajo)
-MULTIPLICADOR_SALTO_ESCALERA = 0.8   # Reduce salto desde escalera
-VEL_MAX_CAIDA = 5                    # Velocidad máxima de caída (más bajo = caída más lenta)
-TIEMPO_PEGADO_TECHO = 60          # Frames que queda pegado al techo (3 = ~50ms)
-MULTIPLICADOR_GRAVEDAD_BORRACHO = 0.3  # Gravedad del borracho
-VEL_MAX_CAIDA_BORRACHO = 5           # Velocidad máxima de caída del borracho
+MULTIPLICADOR_GRAVEDAD = 0.3
+MULTIPLICADOR_SALTO = 0.7
+MULTIPLICADOR_SALTO_ESCALERA = 0.8
+VEL_MAX_CAIDA = 5
+TIEMPO_PEGADO_TECHO = 60
+MULTIPLICADOR_GRAVEDAD_BORRACHO = 0.3
+VEL_MAX_CAIDA_BORRACHO = 5
 # ─────────────────────────────────────────────────────────────────
 
-# Dificultad por nivel
+# Dificultad por nivel - Nivel 6 estratégico (equilibrado)
 DIFICULTAD_NIVEL = {
     1: {'vel_barril': 2.0, 'cadencia': 120, 'max_barriles': 3,  'vel_kong': 0.8},
     2: {'vel_barril': 2.5, 'cadencia': 100, 'max_barriles': 4,  'vel_kong': 1.0},
     3: {'vel_barril': 3.0, 'cadencia': 85,  'max_barriles': 5,  'vel_kong': 1.3},
     4: {'vel_barril': 3.5, 'cadencia': 70,  'max_barriles': 6,  'vel_kong': 1.6},
     5: {'vel_barril': 4.0, 'cadencia': 55,  'max_barriles': 7,  'vel_kong': 2.0},
+    6: {'vel_barril': 3.0, 'cadencia': 80,  'max_barriles': 5,  'vel_kong': 1.5},  # Nivel estratégico
 }
 
 # Colores Argentinos
@@ -96,7 +96,7 @@ TAMANIO_KONG     = (80, 90)
 TAMANIO_PRINCESA = (32, 38)
 TAMANIO_BORRACHO = (32, 32)
 
-# Compatibilidad con nombre antiguo (TAMANO sin Ñ)
+# Compatibilidad
 TAMANO_JUGADOR  = TAMANIO_JUGADOR
 TAMANO_BARRIL   = TAMANIO_BARRIL
 TAMANO_CERVEZA  = TAMANIO_CERVEZA
@@ -105,5 +105,5 @@ TAMANO_KONG     = TAMANIO_KONG
 TAMANO_PRINCESA = TAMANIO_PRINCESA
 TAMANO_BORRACHO = TAMANIO_BORRACHO
 
-# ─── TABLA DE HIGH SCORES (persistencia simple) ──────────────────
+# ─── HIGH SCORES ──────────────────────────────────────────────────
 ARCHIVO_HIGHSCORE = "kong_scores.dat"

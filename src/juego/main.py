@@ -17,6 +17,11 @@ Mejoras v4.1:
 - Brazo de ataque más largo
 - Salto más alto y caída más lenta
 - Puede golpear a Kong, hinchas y borracho
+
+Mejoras v4.2:
+- Hinchas no mueren al ser golpeados, solo retroceden
+- Hinchas buscan barriles activamente
+- Sistema de estados para hinchas (buscando, golpeado, tambaleando)
 """
 import pygame
 import sys
@@ -190,6 +195,27 @@ class KongArgentino:
                                self.borracho.rect.top - 20, 
                                COLORES['naranja'], 20)
 
+    def _golpear_hincha(self):
+        """Función para golpear al hincha - NO MUERE, solo retrocede"""
+        hx, hy, htop = self.hincha.rect.centerx, self.hincha.rect.centery, self.hincha.rect.top
+        
+        # El hincha recibe el golpe pero NO muere
+        self.hincha.recibir_golpe()
+        
+        # Efectos visuales
+        self.emitir(hx, hy, COLORES['rojo'], 15, 'golpe')
+        self.emitir(hx, hy, COLORES['amarillo'], 8, 'chispa')
+        self.gestor.reproducir_sonido('hincha_golpe')
+        
+        # Puntos por golpear al hincha
+        self._otorgar_puntos(30, hx, htop, COLORES['celeste'], 
+                             texto="👊 ¡GOLPE AL HINCHA! +30")
+        
+        # Mensaje extra si está muy borracho
+        if self.hincha.nivel_borrachera >= 7:
+            self.texto_flotante("🍺 ¡HINCHA RE BORRACHO!", hx, htop - 20,
+                               COLORES['naranja'], 20)
+
     # ──────────────────────── HUD ────────────────────────────────── #
 
     def dibujar_hud(self):
@@ -242,7 +268,7 @@ class KongArgentino:
             self.gestor.dibujar_texto(self.pantalla, f"🔥 COMBO x{self.argentino.combo}! 🔥", tam,
                                        col, ANCHO//2, 36, centro=True, sombra=True)
 
-        # Barra de borrachera
+        # Barra de borrachera del borracho
         if self.borracho.nivel_borrachera > 0:
             bx = ANCHO - 170
             self.gestor.dibujar_texto(self.pantalla, "🍺 BORRACHERA:", 14, COLORES['blanco'], 
@@ -252,6 +278,17 @@ class KongArgentino:
             col_b = COLORES['verde'] if self.borracho.nivel_borrachera < 5 else COLORES['rojo']
             pygame.draw.rect(self.pantalla, col_b, (bx, ALTO - 32, ab, 12))
             pygame.draw.rect(self.pantalla, COLORES['blanco'], (bx, ALTO - 32, 90, 12), 1)
+
+        # Barra de borrachera del hincha
+        if self.hincha and self.hincha.nivel_borrachera > 0:
+            bx = ANCHO - 170
+            self.gestor.dibujar_texto(self.pantalla, "🍺 HINCHA:", 14, COLORES['blanco'], 
+                                      bx, ALTO - 20)
+            ab = int(90 * self.hincha.nivel_borrachera / 10)
+            pygame.draw.rect(self.pantalla, COLORES['negro'], (bx, ALTO - 2, 90, 12))
+            col_b = COLORES['verde'] if self.hincha.nivel_borrachera < 6 else COLORES['naranja']
+            pygame.draw.rect(self.pantalla, col_b, (bx, ALTO - 2, ab, 12))
+            pygame.draw.rect(self.pantalla, COLORES['blanco'], (bx, ALTO - 2, 90, 12), 1)
 
         # Watermark
         self.gestor.dibujar_texto(self.pantalla, NOMBRE_JUEGO, 13, COLORES['gris_oscuro'], 
@@ -417,8 +454,11 @@ class KongArgentino:
     def _update_juego(self):
         self.argentino.update(self.plataformas, self.escaleras)
         self.borracho.update(self.plataformas, self.escaleras, self.barriles)
+        
+        # Actualizar hincha con plataformas y barriles para que busque
         if self.hincha:
-            self.hincha.update()
+            self.hincha.update(self.plataformas, self.escaleras, self.barriles)
+        
         self.princesa.update()
         self.kong.update(self.plataformas)
 
@@ -492,6 +532,15 @@ class KongArgentino:
                                       texto="🍺 +50 (Borracho!)")
                 continue
 
+            # Hincha toma barril
+            if self.hincha and self.hincha.rect.colliderect(b.rect):
+                self.hincha.beber_barril()
+                self.barriles.remove(b)
+                self.emitir(b.rect.centerx, b.rect.centery, COLORES['amarillo'], 10, 'explosion')
+                self._otorgar_puntos(30, b.rect.centerx, b.rect.top, COLORES['celeste'],
+                                      texto="🍺 +30 (Hincha!)")
+                continue
+
             # Barril sale de la pantalla
             if b.rect.y > ALTO + 60 or b.rect.x < -60 or b.rect.x > ANCHO + 60:
                 self.barriles.remove(b)
@@ -539,19 +588,9 @@ class KongArgentino:
             if ataque_rect.colliderect(self.borracho.rect):
                 self._golpear_borracho()
             
-            # Golpear al hincha
+            # Golpear al hincha - AHORA NO MUERE, solo retrocede
             if self.hincha and ataque_rect.colliderect(self.hincha.rect):
-                hx, hy, htop = self.hincha.rect.centerx, self.hincha.rect.centery, self.hincha.rect.top
-                murio = self.hincha.recibir_golpe()
-                self.emitir(hx, hy, COLORES['rojo'], 15, 'golpe')
-                self.gestor.reproducir_sonido('hincha_golpe')
-                self._otorgar_puntos(50, hx, htop, COLORES['celeste'], texto="💥 ¡GOLPE AL HINCHA! +50")
-                if murio:
-                    self.texto_flotante("🇦🇷 ¡HINCHA ELIMINADO! +200", hx, htop - 20,
-                                        COLORES['oro'], 28)
-                    self._otorgar_puntos(200, hx, htop, COLORES['oro'])
-                    self.emitir(hx, hy, COLORES['amarillo'], 30, 'fuego_artificial')
-                    self.hincha = None
+                self._golpear_hincha()
 
         # ── Colisión jugador - Kong (sin ataque) ──
         if self.argentino.rect.colliderect(self.kong.rect):

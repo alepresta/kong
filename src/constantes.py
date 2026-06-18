@@ -1,3 +1,4 @@
+# src/constantes.py
 """
 KONG ARGENTINO - CONSTANTES DEL JUEGO v4.0
 Creado por Apresta para Prestalabs
@@ -38,6 +39,16 @@ VELOCIDAD_NUBES = 0.3                # velocidad de movimiento de nubes
 TIEMPO_ANIMACION_MUERTE = 90         # frames de animación al morir
 SHAKE_DURACION = 18                  # frames de cámara shake
 SHAKE_INTENSIDAD = 5
+
+# ─── NUEVAS CONSTANTES DE SALTO v4.2 ────────────────────────────
+# Control de salto (valores más bajos = salto más lento/flotante)
+MULTIPLICADOR_GRAVEDAD = 0.3         # Reduce la gravedad (0.3 = caída muy lenta)
+MULTIPLICADOR_SALTO = 0.7            # Reduce la velocidad de salto (0.7 = salto más bajo)
+MULTIPLICADOR_SALTO_ESCALERA = 0.8   # Reduce salto desde escalera
+VEL_MAX_CAIDA = 5                    # Velocidad máxima de caída (más bajo = caída más lenta)
+TIEMPO_PEGADO_TECHO = 60          # Frames que queda pegado al techo (3 = ~50ms)
+MULTIPLICADOR_GRAVEDAD_BORRACHO = 0.3  # Gravedad del borracho
+VEL_MAX_CAIDA_BORRACHO = 5           # Velocidad máxima de caída del borracho
 # ─────────────────────────────────────────────────────────────────
 
 # Dificultad por nivel
@@ -71,7 +82,6 @@ COLORES = {
     'violeta':       (150, 50, 200),
     'rosa':          (255, 150, 180),
     'transparente':  (0, 0, 0, 0),
-    # Nuevos v4.0
     'cyan':          (0, 220, 255),
     'magenta':       (220, 0, 220),
     'lima':          (150, 255, 0),

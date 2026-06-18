@@ -348,27 +348,39 @@ class Princesa(pygame.sprite.Sprite):
                                 (x + 33, heart_y - 8), (x + 33, heart_y - 4), 
                                 (x + 30, heart_y)])
 
+# =========================================================================
+#  NUEVO: KONG REDISEÑADO COMO GORILA
+# =========================================================================
+# =========================================================================
+#  KONG REDISEÑADO - GORILA CON BRAZOS LEVANTADOS (COMO COLGANDO)
+# =========================================================================
+# =========================================================================
+#  KONG ESTILO DONKEY KONG CON BRAZOS LEVANTADOS (COMO COLGANDO DE RAMA)
+# =========================================================================
 class KongCervecero(pygame.sprite.Sprite):
     def __init__(self, x, y, gestor, nivel=1):
         super().__init__()
         self.gestor = gestor
         self.nivel = nivel
-        self.rect = pygame.Rect(x, y, TAMANO_KONG[0], TAMANO_KONG[1])
+        self.rect = pygame.Rect(x, y, 110, 120)  # Tamaño más grande y proporcional a DK
+        
         self.tiempo_barril = 0
         self.enojado = False
         self.tiempo_enojado = 0
         self.direccion = 1
-        cfg = DIFICULTAD_NIVEL.get(nivel, DIFICULTAD_NIVEL[5])
-        self.vel_x = cfg['vel_kong']
         self.x_inicial = x
-        self.rango_movimiento = 180
+        self.rango_movimiento = 200
+        
         self.anim_frame = 0
         self.rugido_frame = 0
         self.shake_x = 0
         self.shake_y = 0
-        self.tiempo_entre_barriles = 0
         
-        # Generar frames de animación
+        cfg = DIFICULTAD_NIVEL.get(nivel, DIFICULTAD_NIVEL[5])
+        self.vel_x = cfg['vel_kong']
+        self.tiempo_entre_barriles = 0
+
+        # Frames de animación
         self.frames_idle = []
         self.frames_roar = []
         self.frames_throw = []
@@ -376,176 +388,152 @@ class KongCervecero(pygame.sprite.Sprite):
 
     def _generar_frames(self):
         for i in range(6):
-            surf = self._dibujar_kong(i, 'idle')
-            self.frames_idle.append(surf)
-            surf = self._dibujar_kong(i, 'roar')
-            self.frames_roar.append(surf)
-            surf = self._dibujar_kong(i, 'throw')
-            self.frames_throw.append(surf)
+            self.frames_idle.append(self._dibujar_kong(i, 'idle'))
+            self.frames_roar.append(self._dibujar_kong(i, 'roar'))
+            self.frames_throw.append(self._dibujar_kong(i, 'throw'))
 
     def _dibujar_kong(self, frame, estado):
-        surf = pygame.Surface((TAMANO_KONG[0] + 30, TAMANO_KONG[1] + 30), pygame.SRCALPHA)
-        x, y = 15, 15
+        """Dibuja a Donkey Kong con brazos levantados (postura de colgar de rama)"""
+        surf = pygame.Surface((180, 160), pygame.SRCALPHA)
+        x, y = 35, 20
+
+        # === SOMBRA ===
+        pygame.draw.ellipse(surf, (0, 0, 0, 100), (x + 5, y + 115, 95, 22))
+
+        # === CUERPO ===
+        # Torso musculoso
+        pygame.draw.ellipse(surf, (45, 28, 18), (x + 18, y + 55, 78, 68))   # Pelaje base oscuro
+        pygame.draw.ellipse(surf, (65, 42, 28), (x + 23, y + 58, 68, 58))   # Pelaje medio
         
-        # --- SOMBRA ---
-        pygame.draw.ellipse(surf, (0, 0, 0, 60), (x + 5, y + 65, 70, 15))
+        # Barriga más clara
+        pygame.draw.ellipse(surf, (130, 85, 55), (x + 32, y + 68, 48, 45))
+
+        # === CORBATA ROJA ICÓNICA ===
+        tie_points = [(x+48, y+72), (x+38, y+88), (x+50, y+102), (x+62, y+88), (x+53, y+72)]
+        pygame.draw.polygon(surf, (200, 10, 10), tie_points)
+        pygame.draw.circle(surf, (180, 0, 0), (x + 50, y + 82), 11)  # Nudo
         
-        # --- CUERPO ---
-        pygame.draw.ellipse(surf, (60, 40, 30), (x + 15, y + 35, 50, 40))
-        pygame.draw.ellipse(surf, (80, 55, 40), (x + 18, y + 38, 44, 34))
-        
-        for px in range(6):
-            for py in range(4):
-                if (px + py) % 2 == 0:
-                    pygame.draw.circle(surf, (100, 70, 50), 
-                                     (x + 28 + px * 5, y + 42 + py * 6), 2)
-        
-        # --- BRAZOS ---
+        # Letras "DK"
+        pygame.draw.line(surf, (255, 255, 255), (x + 44, y + 78), (x + 44, y + 87), 3)
+        pygame.draw.line(surf, (255, 255, 255), (x + 55, y + 78), (x + 55, y + 87), 3)
+        pygame.draw.line(surf, (255, 255, 255), (x + 55, y + 82), (x + 59, y + 82), 3)
+
+        # === BRAZOS (SIEMPRE LEVANTADOS, COMO COLGANDO DE RAMA) ===
+        color_brazo = (45, 28, 18)
+        color_mano = (60, 38, 25)
+
+        # Brazo izquierdo (siempre levantado)
+        # En rugido, ligeramente más arriba
+        izq_y = y + 22 if estado == 'roar' else y + 28
+        pygame.draw.line(surf, color_brazo, (x + 25, y + 65), (x + 18, izq_y), 24)
+        pygame.draw.circle(surf, color_mano, (x + 18, izq_y), 14)
+        # Dedos colgando
+        for d in [-6, 0, 6]:
+            pygame.draw.circle(surf, color_mano, (x + 16 + d, izq_y + 3), 5)
+
+        # Brazo derecho (varía según estado)
         if estado == 'throw':
-            brazo_off = -10
-        elif estado == 'roar':
-            brazo_off = -5
+            # Brazo extendido hacia adelante para lanzar
+            pygame.draw.line(surf, color_brazo, (x + 85, y + 65), (x + 135, y + 58), 24)
+            pygame.draw.circle(surf, color_mano, (x + 135, y + 58), 14)
+            pygame.draw.circle(surf, (35, 22, 15), (x + 140, y + 56), 11)  # Puño
+            # Barril en la mano (para el frame de lanzamiento)
+            bx = x + 130
+            by = y + 45
+            pygame.draw.rect(surf, (80, 55, 30), (bx, by, 18, 24))
+            pygame.draw.rect(surf, (140, 100, 60), (bx+2, by+2, 14, 20))
+            pygame.draw.ellipse(surf, (180, 150, 80), (bx, by-2, 18, 6))
+            pygame.draw.ellipse(surf, (200, 180, 100), (bx+2, by, 14, 4))
+            pygame.draw.rect(surf, (220, 200, 100), (bx+3, by+6, 12, 3))
+            pygame.draw.rect(surf, (220, 200, 100), (bx+3, by+14, 12, 3))
         else:
-            brazo_off = int(math.sin(frame * 0.5) * 2)
+            # Brazo derecho levantado (postura normal)
+            der_y = y + 22 if estado == 'roar' else y + 28
+            pygame.draw.line(surf, color_brazo, (x + 85, y + 65), (x + 95, der_y), 24)
+            pygame.draw.circle(surf, color_mano, (x + 95, der_y), 14)
+            # Dedos colgando
+            for d in [-6, 0, 6]:
+                pygame.draw.circle(surf, color_mano, (x + 93 + d, der_y + 3), 5)
+
+        # === PIERNAS ===
+        pygame.draw.ellipse(surf, (45, 28, 18), (x + 25, y + 110, 30, 38))
+        pygame.draw.ellipse(surf, (45, 28, 18), (x + 58, y + 110, 30, 38))
+        pygame.draw.ellipse(surf, (65, 42, 28), (x + 29, y + 115, 22, 28))
+        pygame.draw.ellipse(surf, (65, 42, 28), (x + 62, y + 115, 22, 28))
+
+        # === CABEZA ===
+        # Cabeza base
+        pygame.draw.circle(surf, (55, 35, 22), (x + 55, y + 38), 42)
+        # Frente prominente
+        pygame.draw.ellipse(surf, (55, 35, 22), (x + 28, y + 18, 54, 32))
+
+        # Hocico
+        pygame.draw.ellipse(surf, (80, 55, 38), (x + 33, y + 42, 46, 28))
         
-        pygame.draw.line(surf, (70, 45, 35), 
-                        (x + 20, y + 40), (x - 5 + brazo_off, y + 55), 12)
-        pygame.draw.circle(surf, (80, 55, 40), (x - 5 + brazo_off, y + 55), 7)
-        for d in [-3, 0, 3]:
-            pygame.draw.circle(surf, (80, 55, 40), (x - 8 + brazo_off + d, y + 58), 3)
-        
-        if estado == 'throw':
-            brazo_off2 = 15
-            botella_off = 10
-        elif estado == 'roar':
-            brazo_off2 = 5
-            botella_off = 5
-        else:
-            brazo_off2 = int(math.sin(frame * 0.5 + 1) * 2)
-            botella_off = 0
-        
-        pygame.draw.line(surf, (70, 45, 35), 
-                        (x + 60, y + 40), (x + 85 + brazo_off2, y + 45), 12)
-        pygame.draw.circle(surf, (80, 55, 40), (x + 85 + brazo_off2, y + 45), 7)
-        
-        bx = x + 80 + brazo_off2 + botella_off
-        by = y + 35
-        pygame.draw.rect(surf, (60, 40, 20), (bx, by, 12, 20))
-        pygame.draw.rect(surf, (200, 180, 100), (bx, by, 12, 20), 1)
-        pygame.draw.ellipse(surf, (200, 180, 100), (bx - 1, by - 4, 14, 8))
-        pygame.draw.ellipse(surf, (150, 130, 70), (bx + 2, by - 2, 8, 4))
-        pygame.draw.rect(surf, (255, 220, 50), (bx + 2, by + 6, 8, 4))
-        pygame.draw.rect(surf, (255, 220, 50), (bx + 2, by + 12, 8, 4))
-        
-        # --- CABEZA ---
+        # === OREJAS ===
+        pygame.draw.circle(surf, (50, 32, 20), (x + 18, y + 32), 14)
+        pygame.draw.circle(surf, (50, 32, 20), (x + 92, y + 32), 14)
+
+        # === CEJAS ENFADADAS ===
+        eyebrow_y = y + 23 if estado == 'roar' else y + 26
+        pygame.draw.line(surf, (25, 15, 10), (x + 28, eyebrow_y - 3), (x + 48, eyebrow_y + 3), 8)
+        pygame.draw.line(surf, (25, 15, 10), (x + 62, eyebrow_y + 3), (x + 82, eyebrow_y - 4), 8)
+
+        # === OJOS ===
+        ojo_y = 32
         if estado == 'roar':
-            boca_off = 8
-            boca_abierta = True
-        else:
-            boca_off = 0
-            boca_abierta = False
-        
-        pygame.draw.circle(surf, (70, 45, 35), (x + 40, y + 22), 25)
-        pygame.draw.circle(surf, (90, 60, 45), (x + 40, y + 24), 22)
-        
-        if boca_abierta:
-            pygame.draw.ellipse(surf, (60, 35, 25), (x + 28, y + 30, 24, 16))
-            pygame.draw.ellipse(surf, (80, 50, 35), (x + 30, y + 32, 20, 12))
-        else:
-            pygame.draw.ellipse(surf, (60, 35, 25), (x + 28, y + 30, 24, 8))
-        
-        if boca_abierta:
-            pygame.draw.ellipse(surf, (200, 50, 50), (x + 32, y + 34, 16, 10))
-            for d in range(4):
-                pygame.draw.rect(surf, (255, 255, 255), (x + 34 + d * 4, y + 34, 3, 4))
-                pygame.draw.rect(surf, (255, 255, 255), (x + 34 + d * 4, y + 38, 3, 4))
-            pygame.draw.polygon(surf, (255, 255, 255), 
-                               [(x + 30, y + 32), (x + 33, y + 38), (x + 36, y + 32)])
-            pygame.draw.polygon(surf, (255, 255, 255), 
-                               [(x + 50, y + 32), (x + 53, y + 38), (x + 56, y + 32)])
-        else:
-            pygame.draw.arc(surf, (100, 60, 40), (x + 32, y + 32, 16, 8), 0, math.pi, 2)
-        
-        # --- OREJAS ---
-        for ox in [8, 56]:
-            pygame.draw.circle(surf, (60, 35, 25), (x + ox, y + 10), 10)
-            pygame.draw.circle(surf, (90, 60, 45), (x + ox, y + 12), 7)
-            pygame.draw.circle(surf, (80, 50, 35), (x + ox, y + 13), 4)
-        
-        # --- OJOS ---
-        ojo_y = 18 + boca_off // 2
-        pygame.draw.circle(surf, (255, 255, 255), (x + 32, y + ojo_y), 8)
-        pygame.draw.circle(surf, (255, 255, 255), (x + 48, y + ojo_y), 8)
-        
-        if self.gestor.argentino:
-            dx = self.gestor.argentino.rect.centerx - (self.rect.x + 40)
-            dy = self.gestor.argentino.rect.centery - (self.rect.y + 40)
+            ojo_y += 2
+
+        pygame.draw.ellipse(surf, (255, 245, 210), (x + 36, y + ojo_y, 14, 12))
+        pygame.draw.ellipse(surf, (255, 245, 210), (x + 64, y + ojo_y, 14, 12))
+
+        # Pupilas (miran al jugador)
+        if hasattr(self.gestor, 'argentino') and self.gestor.argentino:
+            dx = self.gestor.argentino.rect.centerx - (self.rect.x + 55)
+            dy = self.gestor.argentino.rect.centery - (self.rect.y + 38)
             ang = math.atan2(dy, dx)
-            dist = min(3, math.hypot(dx, dy) * 0.01)
-            px1 = x + 32 + math.cos(ang) * dist * 2
-            py1 = y + ojo_y + math.sin(ang) * dist * 2
-            px2 = x + 48 + math.cos(ang) * dist * 2
-            py2 = y + ojo_y + math.sin(ang) * dist * 2
+            dist = min(2.8, math.hypot(dx, dy) * 0.013)
         else:
-            px1, py1 = x + 33, y + ojo_y
-            px2, py2 = x + 49, y + ojo_y
-        
-        if self.enojado:
-            color_iris = (200, 50, 50)
-        else:
-            color_iris = (100, 80, 50)
-        pygame.draw.circle(surf, color_iris, (int(px1), int(py1)), 4)
-        pygame.draw.circle(surf, color_iris, (int(px2), int(py2)), 4)
-        
-        pygame.draw.circle(surf, (20, 20, 20), (int(px1 + 1), int(py1 + 1)), 2)
-        pygame.draw.circle(surf, (20, 20, 20), (int(px2 + 1), int(py2 + 1)), 2)
-        
-        pygame.draw.circle(surf, (255, 255, 255), (int(px1 - 1), int(py1 - 2)), 1)
-        pygame.draw.circle(surf, (255, 255, 255), (int(px2 - 1), int(py2 - 2)), 1)
-        
-        # --- CEJAS ---
-        if self.enojado:
-            pygame.draw.line(surf, (30, 30, 30), (x + 24, y + 12 + boca_off//2), 
-                           (x + 36, y + 16 + boca_off//2), 3)
-            pygame.draw.line(surf, (30, 30, 30), (x + 44, y + 16 + boca_off//2), 
-                           (x + 56, y + 12 + boca_off//2), 3)
-        else:
-            pygame.draw.line(surf, (30, 30, 30), (x + 26, y + 14 + boca_off//2), 
-                           (x + 36, y + 12 + boca_off//2), 2)
-            pygame.draw.line(surf, (30, 30, 30), (x + 44, y + 12 + boca_off//2), 
-                           (x + 54, y + 14 + boca_off//2), 2)
-        
-        # --- VELLO FACIAL ---
-        for fx, fy in [(x + 20, y + 30), (x + 60, y + 30), (x + 25, y + 35), (x + 55, y + 35)]:
-            pygame.draw.line(surf, (50, 30, 20), (fx, fy), (fx + 2, fy + 4), 1)
-        
-        # --- EXPRESIÓN DE RUGIDO ---
+            ang, dist = 0, 0
+
+        px1 = x + 42 + math.cos(ang) * dist * 3.5
+        py1 = y + ojo_y + 6 + math.sin(ang) * dist * 3.5
+        px2 = x + 70 + math.cos(ang) * dist * 3.5
+        py2 = y + ojo_y + 6 + math.sin(ang) * dist * 3.5
+
+        pygame.draw.circle(surf, (30, 18, 12), (int(px1), int(py1)), 4.5)
+        pygame.draw.circle(surf, (30, 18, 12), (int(px2), int(py2)), 4.5)
+
+        # === NARIZ ===
+        pygame.draw.ellipse(surf, (45, 28, 18), (x + 46, y + 48, 19, 11))
+        pygame.draw.circle(surf, (25, 15, 10), (x + 50, y + 50), 3)
+        pygame.draw.circle(surf, (25, 15, 10), (x + 60, y + 50), 3)
+
+        # === BOCA ===
         if estado == 'roar':
-            for i in range(3):
-                ang = math.radians(30 + i * 20)
-                lx = x + 70 + math.cos(ang) * 10
-                ly = y + 20 + math.sin(ang) * 10
-                pygame.draw.line(surf, (200, 100, 50), (lx, ly), 
-                               (lx + math.cos(ang) * 15, ly + math.sin(ang) * 15), 2)
-            pygame.draw.line(surf, (200, 100, 50), (x + 70, y + 35), (x + 85, y + 38), 2)
-            pygame.draw.line(surf, (200, 100, 50), (x + 70, y + 40), (x + 82, y + 44), 2)
-        
+            pygame.draw.ellipse(surf, (30, 12, 8), (x + 37, y + 58, 36, 20))
+            # Dientes
+            for i in range(5):
+                pygame.draw.rect(surf, (255, 250, 230), (x + 40 + i*6, y + 58, 4, 9))
+        else:
+            pygame.draw.arc(surf, (30, 12, 8), (x + 37, y + 57, 34, 16), 0.2, math.pi - 0.3, 6)
+
+        # === PELO DE LA CABEZA ===
+        for i in range(11):
+            ang = math.radians(i * 33 + frame * 12)
+            px = x + 55 + math.cos(ang) * 39
+            py = y + 14 + math.sin(ang) * 19
+            pygame.draw.line(surf, (38, 24, 16), (px, py), (px + math.cos(ang)*9, py - 7), 5)
+
         return surf
 
     def update(self, plataformas):
         self.anim_frame += 1
         self.tiempo_barril += 1
         
-        # Movimiento horizontal
         self.rect.x += self.vel_x * self.direccion
-        
-        if self.enojado:
-            self.shake_x = random.randint(-2, 2)
-            self.shake_y = random.randint(-2, 2)
-        else:
-            self.shake_x = 0
-            self.shake_y = 0
 
+        # Rebote en límites
         if self.rect.x > self.x_inicial + self.rango_movimiento:
             self.rect.x = self.x_inicial + self.rango_movimiento
             self.direccion = -1
@@ -553,65 +541,199 @@ class KongCervecero(pygame.sprite.Sprite):
             self.rect.x = self.x_inicial - self.rango_movimiento
             self.direccion = 1
 
+        # Enfado
         if self.tiempo_enojado > 0:
             self.tiempo_enojado -= 1
             self.enojado = True
+            self.shake_x = random.randint(-3, 3)
+            self.shake_y = random.randint(-2, 2)
         else:
             self.enojado = False
+            self.shake_x = 0
+            self.shake_y = 0
 
         if self.rugido_frame > 0:
             self.rugido_frame -= 1
 
     def lanzar_barril(self):
+        """Lanza un barril desde la mano derecha levantada (posición de lanzamiento)"""
         cfg = DIFICULTAD_NIVEL.get(self.nivel, DIFICULTAD_NIVEL[5])
         vel_mult = cfg['vel_barril'] / 2.0
-        barril = BarrilCerveza(self.rect.centerx - 16, self.rect.bottom - 10,
-                               self.gestor, es_item=False, vel_mult=vel_mult)
-        barril.vel_x = (3 * vel_mult) * self.direccion
-        barril.vel_y = -4  # Lanzado hacia arriba
+
+        # Posición de la mano derecha en el frame de lanzamiento (según dirección)
+        if self.direccion == 1:
+            # Mirando a la derecha: la mano derecha extendida está en x + 135, y + 58 (ver dibujo)
+            mano_x = self.rect.x + 135 - 9  # centro del barril
+            mano_y = self.rect.y + 58 - 12   # ajuste para que el barril salga de la mano
+        else:
+            # Mirando a la izquierda: invertir coordenadas
+            mano_x = self.rect.x + self.rect.width - 135 - 9
+            mano_y = self.rect.y + 58 - 12
+
+        barril = BarrilCerveza(mano_x, mano_y, self.gestor, es_item=False, vel_mult=vel_mult)
+        barril.vel_x = (4.2 * vel_mult) * self.direccion
+        barril.vel_y = -4.5  # sale con impulso hacia arriba, típico de DK
         return barril
 
     def set_mario_cerca(self, cerca):
         if cerca and not self.enojado:
-            self.tiempo_enojado = 60
-            self.rugido_frame = 60
+            self.tiempo_enojado = 70
+            self.rugido_frame = 65
 
     def get_tiempo_barril(self):
         cfg = DIFICULTAD_NIVEL.get(self.nivel, DIFICULTAD_NIVEL[5])
-        # Si está enojado, lanza más rápido
         base = cfg['cadencia']
-        if self.enojado:
-            base = int(base * 0.7)
-        return base
+        return int(base * 0.75) if self.enojado else base
 
     def dibujar(self, pantalla):
-        x, y = self.rect.x + self.shake_x, self.rect.y + self.shake_y
-        
+        x = self.rect.x + self.shake_x
+        y = self.rect.y + self.shake_y
+
         t = pygame.time.get_ticks()
-        frame_idx = (t // 200) % len(self.frames_idle)
-        
+        frame_idx = (t // 180) % 6
+
         if self.rugido_frame > 0:
-            frame = self.frames_roar[frame_idx % len(self.frames_roar)]
-        elif self.tiempo_barril > self.get_tiempo_barril() - 20:
-            frame = self.frames_throw[frame_idx % len(self.frames_throw)]
+            frame = self.frames_roar[frame_idx]
+        elif self.tiempo_barril > self.get_tiempo_barril() - 25:
+            frame = self.frames_throw[frame_idx]
         else:
-            frame = self.frames_idle[frame_idx % len(self.frames_idle)]
-        
+            frame = self.frames_idle[frame_idx]
+
         if self.direccion == -1:
             frame = pygame.transform.flip(frame, True, False)
-        
-        pantalla.blit(frame, (x - 15, y - 10))
+
+        pantalla.blit(frame, (x - 35, y - 18))
         
         # Partículas de rugido
-        if self.rugido_frame > 0 and self.rugido_frame % 10 < 5:
-            for _ in range(3):
+        if self.rugido_frame > 0 and self.rugido_frame % 8 < 4:
+            for _ in range(4):
                 self.gestor.particulas.append({
-                    'x': x + random.randint(50, 80),
-                    'y': y + random.randint(20, 40),
-                    'vx': random.uniform(1, 4),
-                    'vy': random.uniform(-2, 2),
-                    'vida': 15,
-                    'vida_max': 15,
-                    'color': (200, 150, 50),
-                    'tam': random.randint(2, 5)
+                    'x': x + random.randint(55, 95),
+                    'y': y + random.randint(25, 55),
+                    'vx': random.uniform(1.5, 5),
+                    'vy': random.uniform(-3, 2),
+                    'vida': 18,
+                    'vida_max': 18,
+                    'color': (220, 140, 40),
+                    'tam': random.randint(3, 6)
                 })
+
+
+
+
+
+
+# =========================================================================
+#  NUEVO: HINCHA BORRACHITO (compañero del borracho)
+# =========================================================================
+class HinchaBorrachito(pygame.sprite.Sprite):
+    def __init__(self, x, y, gestor):
+        super().__init__()
+        self.gestor = gestor
+        self.rect = pygame.Rect(x, y, 32, 38)  # tamaño similar al jugador
+        self.vidas = 3
+        self.anim_frame = 0
+        self.offset_y = 0
+        self.tiempo_grito = 0
+        self.gritando = False
+        self.texto_grito = ""
+        self.tiempo_texto = 0
+
+    def update(self):
+        self.anim_frame += 1
+        self.offset_y = math.sin(self.anim_frame * 0.1) * 3
+        
+        # Grito cada 2 segundos (120 frames)
+        self.tiempo_grito += 1
+        if self.tiempo_grito >= 120:
+            self.tiempo_grito = 0
+            self.gritando = True
+            self.tiempo_texto = 40  # dura 40 frames visible
+        
+        if self.tiempo_texto > 0:
+            self.tiempo_texto -= 1
+            if self.tiempo_texto == 0:
+                self.gritando = False
+
+    def recibir_golpe(self):
+        """Reduce vidas y devuelve True si murió"""
+        self.vidas -= 1
+        if self.vidas <= 0:
+            return True
+        return False
+
+    def dibujar(self, pantalla):
+        x, y = self.rect.x, self.rect.y + self.offset_y
+        # Sombra
+        self.gestor.dibujar_sombra(pantalla, self.rect.centerx, self.rect.bottom, 28, 8)
+
+        # --- CAMISETA CELESTE Y BLANCA (como Argentina) ---
+        pygame.draw.rect(pantalla, (117, 190, 218), (x, y+12, 32, 22))  # celeste
+        # Franjas blancas
+        for i in range(0, 32, 8):
+            pygame.draw.rect(pantalla, (255, 255, 255), (x+i, y+12, 4, 22))
+        # Cuello
+        pygame.draw.rect(pantalla, (255, 255, 255), (x+10, y+10, 12, 6))
+        # Número 10 (como Maradona/Messi)
+        self.gestor.dibujar_texto(pantalla, "10", 12, (0, 0, 0), x+12, y+18)
+
+        # --- CABEZA ---
+        pygame.draw.circle(pantalla, (255, 220, 200), (x+16, y+10), 12)
+        # Pelo negro (corto)
+        pygame.draw.ellipse(pantalla, (30, 30, 30), (x+4, y-2, 24, 10))
+        # Ojos
+        pygame.draw.circle(pantalla, (255, 255, 255), (x+12, y+8), 3)
+        pygame.draw.circle(pantalla, (255, 255, 255), (x+20, y+8), 3)
+        pygame.draw.circle(pantalla, (0, 0, 0), (x+13, y+9), 2)
+        pygame.draw.circle(pantalla, (0, 0, 0), (x+21, y+9), 2)
+        # Boca (feliz o gritando)
+        if self.gritando:
+            pygame.draw.ellipse(pantalla, (200, 50, 50), (x+12, y+14, 8, 6))
+        else:
+            pygame.draw.arc(pantalla, (200, 50, 50), (x+10, y+14, 12, 6), 0, math.pi, 2)
+
+        # --- BRAZOS (alzados si grita) ---
+        if self.gritando:
+            # Brazos arriba
+            pygame.draw.rect(pantalla, (255, 220, 200), (x-4, y+6, 5, 12))
+            pygame.draw.rect(pantalla, (255, 220, 200), (x+31, y+6, 5, 12))
+            # Puños
+            pygame.draw.circle(pantalla, (255, 220, 200), (x-2, y+6), 4)
+            pygame.draw.circle(pantalla, (255, 220, 200), (x+34, y+6), 4)
+        else:
+            pygame.draw.rect(pantalla, (255, 220, 200), (x-4, y+14, 5, 14))
+            pygame.draw.rect(pantalla, (255, 220, 200), (x+31, y+14, 5, 14))
+
+        # --- PIERNAS ---
+        pygame.draw.rect(pantalla, (30, 60, 140), (x+4, y+34, 8, 8))
+        pygame.draw.rect(pantalla, (30, 60, 140), (x+20, y+34, 8, 8))
+        # Zapatillas
+        pygame.draw.rect(pantalla, (40, 40, 40), (x+2, y+40, 12, 4))
+        pygame.draw.rect(pantalla, (40, 40, 40), (x+18, y+40, 12, 4))
+
+        # --- TEXTO DE GRITO ---
+        if self.gritando:
+            # Texto "VAMO VAMO ARGENTINA" con sombra
+            texto = "🇦🇷 VAMO VAMO ARGENTINA 🇦🇷"
+            # Sombra
+            self.gestor.dibujar_texto(pantalla, texto, 18, (0,0,0), x+16, y-30, centro=True)
+            # Texto principal (amarillo con borde)
+            self.gestor.dibujar_texto(pantalla, texto, 18, COLORES['amarillo'], x+14, y-32, centro=True)
+            
+            # Partículas de confeti (simulado)
+            if self.anim_frame % 5 == 0:
+                self.gestor.particulas.append({
+                    'x': x + random.randint(-10, 40),
+                    'y': y - 20,
+                    'vx': random.uniform(-1, 1),
+                    'vy': random.uniform(-2, 0),
+                    'vida': 20,
+                    'vida_max': 20,
+                    'color': random.choice([COLORES['celeste'], COLORES['blanco'], COLORES['amarillo']]),
+                    'tam': random.randint(2, 4)
+                })
+
+        # Barra de vidas (3 corazones pequeños)
+        for i in range(self.vidas):
+            pygame.draw.circle(pantalla, COLORES['rojo'], (x+6 + i*10, y+50), 4)
+            pygame.draw.circle(pantalla, COLORES['blanco'], (x+6 + i*10, y+49), 2)

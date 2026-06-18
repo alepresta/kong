@@ -9,7 +9,7 @@ import math
 from constantes import *
 from gestor_graficos import GestorGraficos
 from jugador import Argentino, BorrachoIA
-from objetos import Plataforma, Escalera, BarrilCerveza, PoderMate, Princesa, KongCervecero
+from objetos import Plataforma, Escalera, BarrilCerveza, PoderMate, Princesa, KongCervecero, HinchaBorrachito
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -120,10 +120,10 @@ class TextoFlotante:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  GENERADOR DE NIVELES (sin cambios)
+#  GENERADOR DE NIVELES (con hincha)
 # ─────────────────────────────────────────────────────────────────────────────
 def generar_layout_nivel(nivel):
-    """Devuelve (plataformas_data, escaleras_data, cervezas_pos, mates_pos)"""
+    """Devuelve (plataformas_data, escaleras_data, cervezas_pos, mates_pos, hincha_pos)"""
     plataformas = []
     escaleras = []
 
@@ -148,6 +148,7 @@ def generar_layout_nivel(nivel):
                 (360, ALTO-520, 100), (640, ALTO-520, 100),
                 (ANCHO//2-20, 260, 100),
             ],
+            'hincha': (350, ALTO-520-30),
         },
         # Nivel 2
         {
@@ -166,6 +167,7 @@ def generar_layout_nivel(nivel):
                 (390, ALTO-560, 105), (660, ALTO-560, 105),
                 (ANCHO//2-25, 255, 105),
             ],
+            'hincha': (390, ALTO-560-30),
         },
         # Nivel 3
         {
@@ -184,6 +186,7 @@ def generar_layout_nivel(nivel):
                 (360, ALTO-580, 105), (640, ALTO-580, 105),
                 (ANCHO//2-20, 250, 110),
             ],
+            'hincha': (360, ALTO-580-30),
         },
         # Nivel 4
         {
@@ -202,6 +205,7 @@ def generar_layout_nivel(nivel):
                 (390, ALTO-560, 100), (660, ALTO-560, 100),
                 (ANCHO//2-20, 250, 110),
             ],
+            'hincha': (390, ALTO-560-30),
         },
         # Nivel 5
         {
@@ -220,6 +224,7 @@ def generar_layout_nivel(nivel):
                 (380, ALTO-580, 110), (640, ALTO-580, 110),
                 (ANCHO//2-20, 248, 110),
             ],
+            'hincha': (380, ALTO-580-30),
         },
     ]
 
@@ -227,6 +232,7 @@ def generar_layout_nivel(nivel):
     lay = layouts[idx]
     plataformas += lay['p']
     escaleras = lay['e']
+    hincha_pos = lay.get('hincha', (ANCHO//2, ALTO-100))
 
     cervezas = []
     for (px, py, pw) in lay['p']:
@@ -241,7 +247,7 @@ def generar_layout_nivel(nivel):
     if len(lay['p']) > 8:
         mates.append((lay['p'][6][0] + 30, lay['p'][6][1] - 20))
 
-    return plataformas, escaleras, cervezas, mates
+    return plataformas, escaleras, cervezas, mates, hincha_pos
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -275,6 +281,7 @@ class KongArgentino:
 
         self.argentino = None
         self.borracho = None
+        self.hincha = None
         self.kong = None
         self.princesa = None
 
@@ -290,7 +297,7 @@ class KongArgentino:
         self.cervezas = []
         self.textos_flotantes = []
 
-        plat_data, esc_data, cerv_pos, mates_pos = generar_layout_nivel(self.nivel)
+        plat_data, esc_data, cerv_pos, mates_pos, hincha_pos = generar_layout_nivel(self.nivel)
 
         for (x, y, w) in plat_data:
             self.plataformas.append(Plataforma(x, y, w, self.gestor))
@@ -309,6 +316,8 @@ class KongArgentino:
         self.argentino = Argentino(100, ALTO - 70, self.gestor)
         self.gestor.argentino = self.argentino
         self.borracho = BorrachoIA(300, ALTO - 70, self.gestor)
+        # Crear el hincha
+        self.hincha = HinchaBorrachito(hincha_pos[0], hincha_pos[1], self.gestor)
 
     # ── PARTÍCULAS Y TEXTOS ───────────────────────────────────────────────────
     def emitir(self, x, y, color, n=10, fuente='explosion'):
@@ -400,14 +409,12 @@ class KongArgentino:
         self.princesa.dibujar(self.pantalla)
         self.argentino.dibujar(self.pantalla)
         self.borracho.dibujar(self.pantalla)
+        if self.hincha:
+            self.hincha.dibujar(self.pantalla)
 
         self.particulas.dibujar(self.pantalla)
         self.dibujar_textos()
         self.dibujar_hud()
-
-        # DEBUG: Dibujar hitbox de ataque (opcional, desactivar en producción)
-        # if self.argentino.ataque_activo:
-        #     pygame.draw.rect(self.pantalla, (255, 0, 0, 100), self.argentino.ataque_rect, 2)
 
         if self.pausa:
             s = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
@@ -497,6 +504,8 @@ class KongArgentino:
     def _update_juego(self):
         self.argentino.update(self.plataformas, self.escaleras)
         self.borracho.update(self.plataformas, self.escaleras, self.barriles)
+        if self.hincha:
+            self.hincha.update()
         self.princesa.update()
         self.kong.update(self.plataformas)
 
@@ -561,8 +570,6 @@ class KongArgentino:
                 continue
 
             # 2. Verificar si el jugador es golpeado por el barril
-            # Usamos un margen de seguridad para que sea más fácil saltar barriles
-            # Solo golpea si el jugador está en el camino del barril y no saltó
             if self.argentino.rect.colliderect(b.rect):
                 if self.argentino.tiene_poder:
                     # Con poder, rompe el barril automáticamente
@@ -598,6 +605,29 @@ class KongArgentino:
                 self.emitir(b.rect.centerx, b.rect.centery, COLORES['amarillo'], 10, 'explosion')
                 self._otorgar_puntos(50, b.rect.centerx, b.rect.top, COLORES['celeste'],
                                       texto="🍺 +50 (Borracho!)")
+
+        # ─── ATAQUE DEL JUGADOR CONTRA EL HINCHA (CORREGIDO) ───
+        if self.hincha and self.argentino.ataque_activo and self.argentino.ataque_rect.colliderect(self.hincha.rect):
+            # Guardamos las coordenadas ANTES de que el objeto desaparezca
+            hx = self.hincha.rect.centerx
+            hy = self.hincha.rect.centery
+            htop = self.hincha.rect.top
+
+            murio = self.hincha.recibir_golpe()
+
+            # Efectos visuales y sonido del golpe
+            self.emitir(hx, hy, COLORES['rojo'], 15, 'golpe')
+            self.gestor.reproducir_sonido('golpe')
+            self._otorgar_puntos(50, hx, htop, COLORES['celeste'],
+                                 texto="💥 ¡GOLPE AL HINCHA! +50")
+
+            if murio:
+                self.texto_flotante("🇦🇷 ¡HINCHA ELIMINADO! +200",
+                                    hx, htop - 20,
+                                    COLORES['oro'], 28)
+                self._otorgar_puntos(200, hx, htop, COLORES['oro'])
+                self.emitir(hx, hy, COLORES['amarillo'], 30, 'combo')
+                self.hincha = None  # Ahora sí, después de usar las coordenadas
 
         # Colisión con Kong
         if self.argentino.rect.colliderect(self.kong.rect):
@@ -690,20 +720,20 @@ class KongArgentino:
 if __name__ == "__main__":
     print("""
     ╔═══════════════════════════════════════════════════════════════╗
-    ║          KONG ARGENTINO v3.2 - Gráficos Mejorados            ║
-    ║                   Creado por Apresta                         ║
-    ║                   para PRESTALABS                            ║
+    ║          KONG ARGENTINO v3.2 - Gráficos Mejorados             ║
+    ║                   Creado por Apresta                          ║
+    ║                   para PRESTALABS                             ║
     ╠═══════════════════════════════════════════════════════════════╣
-    ║   ¡Rescata a la princesa del Kong Cervecero!                ║
-    ║                                                              ║
-    ║   CONTROLES:                                                 ║
-    ║   A/D o ←/→  : Moverse                                      ║
-    ║   W/↑        : Subir escalera                               ║
-    ║   S/↓        : Bajar escalera                               ║
-    ║   ESPACIO    : Saltar                                        ║
-    ║   Z o X      : Atacar (golpear barriles)                    ║
-    ║   P          : Pausar                                        ║
-    ║   ESC        : Menú                                          ║
+    ║   ¡Rescata a la princesa del Kong Cervecero!                  ║
+    ║                                                               ║
+    ║   CONTROLES:                                                  ║
+    ║   A/D o ←/→  : Moverse                                        ║
+    ║   W/↑        : Subir escalera                                 ║
+    ║   S/↓        : Bajar escalera                                 ║
+    ║   ESPACIO    : Saltar                                         ║
+    ║   Z o X      : Atacar (golpear barriles y hincha)             ║
+    ║   P          : Pausar                                         ║
+    ║   ESC        : Menú                                           ║
     ╚═══════════════════════════════════════════════════════════════╝
     """)
     juego = KongArgentino()

@@ -198,6 +198,7 @@ class HinchaConBengala(_BaseHinchaExtra):
         self._bengala_viajando = False
         self._bengala_pos_x = 0
         self._bengala_pos_y = 0
+        self._bengala_angulo = 0  # Rotación de la bengala
         
         self.textos_canto = [
             "Bengala y carnaval",
@@ -242,8 +243,35 @@ class HinchaConBengala(_BaseHinchaExtra):
         if self._bengala_viajando:
             self._bengala_pos_x += 4
             self._bengala_pos_y -= 5
+            self._bengala_angulo += 45  # Girar 45 grados por frame (cañita boladora)
             if self._bengala_pos_y < self.rect.top - 120:
+                # Explosión final en el aire
                 self._bengala_viajando = False
+                if self.gestor.sistema_particulas:
+                    ox = int(self._bengala_pos_x)
+                    oy = int(self._bengala_pos_y)
+                    # Explosión masiva
+                    for _ in range(20):
+                        ang = random.uniform(0, math.pi * 2)
+                        dist = random.uniform(0, 40)
+                        px = ox + math.cos(ang) * dist
+                        py = oy + math.sin(ang) * dist
+                        self.gestor.sistema_particulas.emitir(
+                            int(px),
+                            int(py),
+                            random.choice([COLORES['naranja'], COLORES['rojo'], COLORES['amarillo'], (255, 200, 50)]),
+                            5,
+                            'fuego_artificial',
+                        )
+                    # Brillo de explosión
+                    for _ in range(10):
+                        self.gestor.sistema_particulas.emitir(
+                            ox + random.randint(-20, 20),
+                            oy + random.randint(-20, 20),
+                            COLORES['gris'],
+                            6,
+                            'estrella',
+                        )
         
         # Partículas de la bengala
         if self.gestor.sistema_particulas:
@@ -300,25 +328,36 @@ class HinchaConBengala(_BaseHinchaExtra):
         else:
             super().dibujar(pantalla)
 
-        # Colita de caballo (pelo largo atado - NEGRO Y LARGO)
+        # Colita de caballo con rastas (pelo largo atado)
         if not self._arrodillado:
-            # Nuca/punto de amarre con goma
-            pygame.draw.circle(pantalla, (220, 140, 80), (x + 18, y + 10), 2)
-            pygame.draw.circle(pantalla, (220, 140, 80), (x + 18, y + 10), 1)
-            # Colita larga negra cayendo (20 líneas para ser muy larga)
-            for i in range(20):
-                offset_y = i * 2.5 + int(math.sin(self.anim_frame * 0.08 + i) * 3)
-                grosor = 2 if i < 10 else 1 if i < 15 else 1
-                x_offset = int(math.sin(self.anim_frame * 0.12 + i) * (1 + i * 0.1))
-                pygame.draw.line(pantalla, (0, 0, 0), (x + 18, y + 12), (x + 18 + x_offset, y + 12 + offset_y), grosor)
+            # Nuca/punto de amarre con goma marrón
+            pygame.draw.circle(pantalla, (220, 140, 80), (x + 18, y + 10), 3)
+            pygame.draw.circle(pantalla, (180, 100, 50), (x + 18, y + 10), 1)
+            # Rastas en colita larga (8 rastas gruesas)
+            for i in range(8):
+                angulo_base = i * (360 / 8)
+                largo_rasta = 30 + int(math.sin(self.anim_frame * 0.08 + i) * 4)
+                
+                # Calcular posición de la rasta
+                rad = math.radians(angulo_base + int(math.sin(self.anim_frame * 0.1 + i) * 8))
+                fin_x = int(x + 18 + math.cos(rad) * largo_rasta)
+                fin_y = int(y + 12 + math.sin(rad) * largo_rasta)
+                
+                # Dibujar rasta como línea gruesa
+                pygame.draw.line(pantalla, (20, 20, 20), (x + 18, y + 12), (fin_x, fin_y), 3)
+                # Punta de la rasta
+                pygame.draw.circle(pantalla, (10, 10, 10), (fin_x, fin_y), 2)
         else:
-            # Colita cuando está arrodillado (también negra y larga)
-            pygame.draw.circle(pantalla, (220, 140, 80), (x + 18, y + 8), 2)
-            for i in range(16):
-                offset_y = i * 2.2 + int(math.sin(self.anim_frame * 0.1 + i) * 2)
-                grosor = 2 if i < 8 else 1
-                x_offset = int(math.sin(self.anim_frame * 0.15 + i) * (0.5 + i * 0.08))
-                pygame.draw.line(pantalla, (0, 0, 0), (x + 18, y + 10), (x + 18 + x_offset, y + 10 + offset_y), grosor)
+            # Rastas cuando está arrodillado (también visibles)
+            pygame.draw.circle(pantalla, (220, 140, 80), (x + 18, y + 8), 3)
+            for i in range(6):
+                angulo_base = i * (360 / 6)
+                largo_rasta = 20 + int(math.sin(self.anim_frame * 0.1 + i) * 3)
+                rad = math.radians(angulo_base + int(math.sin(self.anim_frame * 0.12 + i) * 6))
+                fin_x = int(x + 18 + math.cos(rad) * largo_rasta)
+                fin_y = int(y + 10 + math.sin(rad) * largo_rasta)
+                pygame.draw.line(pantalla, (20, 20, 20), (x + 18, y + 10), (fin_x, fin_y), 2)
+                pygame.draw.circle(pantalla, (10, 10, 10), (fin_x, fin_y), 1)
 
         glow = pygame.Surface((56, 56), pygame.SRCALPHA)
         pygame.draw.circle(glow, (255, 120, 0, 90), (28, 28), 24)
@@ -328,17 +367,40 @@ class HinchaConBengala(_BaseHinchaExtra):
         if self._bengala_viajando:
             bx = int(self._bengala_pos_x)
             by = int(self._bengala_pos_y)
-            # Cohete rojo oscuro
-            pygame.draw.rect(pantalla, (180, 40, 20), (bx - 3, by, 6, 12), border_radius=2)
-            pygame.draw.rect(pantalla, (255, 80, 40), (bx - 2, by + 1, 4, 8), border_radius=1)
-            # Punta del cohete naranja
-            pygame.draw.circle(pantalla, (255, 140, 40), (bx, by - 4), 4)
-            pygame.draw.circle(pantalla, (255, 200, 100), (bx, by - 4), 2)
+            
+            # Dibujar cañita boladora girando (cilindro que rota)
+            ang_rad = math.radians(self._bengala_angulo)
+            
+            # Cilindro de la cañita (que rota)
+            # Base del cilindro (oscuro)
+            p1x = int(bx + math.cos(ang_rad) * 6)
+            p1y = int(by + math.sin(ang_rad) * 3)
+            p2x = int(bx - math.cos(ang_rad) * 6)
+            p2y = int(by - math.sin(ang_rad) * 3)
+            pygame.draw.line(pantalla, (150, 30, 10), (p1x, p1y), (p2x, p2y), 5)
+            
+            # Parte superior brillante
+            p3x = int(bx + math.cos(ang_rad + math.pi/2) * 5)
+            p3y = int(by + math.sin(ang_rad + math.pi/2) * 5)
+            pygame.draw.line(pantalla, (220, 100, 50), (p1x, p1y), (p3x, p3y), 3)
+            
+            # Punta de fuego en la punta
+            punta_x = int(bx + math.cos(ang_rad + math.pi/4) * 10)
+            punta_y = int(by + math.sin(ang_rad + math.pi/4) * 10)
+            pygame.draw.circle(pantalla, (255, 150, 0), (punta_x, punta_y), 5)
+            pygame.draw.circle(pantalla, (255, 220, 100), (punta_x, punta_y), 2)
+            
+            # Estelas de fuego mientras viaja
+            for i in range(3):
+                estela_x = bx + random.randint(-8, 8)
+                estela_y = by + random.randint(-8, 8) + i * 10
+                pygame.draw.circle(pantalla, (255, 100 + i*30, 50), (estela_x, estela_y), 3 - i)
+            
             # Glow explosivo alrededor
-            glow2 = pygame.Surface((60, 60), pygame.SRCALPHA)
-            pygame.draw.circle(glow2, (255, 120, 0, 120), (30, 30), 25)
-            pygame.draw.circle(glow2, (255, 180, 80, 80), (30, 30), 15)
-            pantalla.blit(glow2, (bx - 30, by - 30))
+            glow2 = pygame.Surface((80, 80), pygame.SRCALPHA)
+            pygame.draw.circle(glow2, (255, 120, 0, 140), (40, 40), 35)
+            pygame.draw.circle(glow2, (255, 180, 80, 90), (40, 40), 20)
+            pantalla.blit(glow2, (bx - 40, by - 40))
         else:
             # Bengala en mano (reposo)
             pygame.draw.line(pantalla, (180, 180, 180), (x + 26, y + 18), (x + 31, y + 8), 3)

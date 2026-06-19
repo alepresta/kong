@@ -190,6 +190,11 @@ class KongArgentino:
 
         posiciones = generar_posiciones((base_x, base_y), len(tipos))
 
+        # Subir el tambor y la bengala al anteultimo piso.
+        if len(posiciones) >= 5:
+            posiciones[2] = (ANCHO // 2 + 210, ALTO - 300)  # HinchaViejoTambor
+            posiciones[4] = (ANCHO // 2 - 210, ALTO - 280)  # HinchaConBengala
+
         self.hinchada = []
         for tipo, pos in zip(tipos, posiciones):
             self.hinchada.append(tipo(pos[0], pos[1], self.gestor))

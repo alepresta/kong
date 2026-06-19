@@ -190,13 +190,16 @@ class HinchaConBengala(_BaseHinchaExtra):
         self.color_remera = (70, 130, 170)
         self.color_franja = COLORES['blanco']
         self.color_pantalon = (35, 35, 55)
+        
+        # Máquina de estados
+        self._estado = 'preparando'  # preparando, lanzando, caminando
+        self._tiempo_estado = 0
         self._arrodillado = False
-        self._lanzando_bengala = False
-        self._tiempo_lanzamiento = 0
-        self._cooldown_bengala = random.randint(90, 150)
+        self._bengala_viajando = False
         self._bengala_pos_x = 0
         self._bengala_pos_y = 0
-        self._bengala_viajando = False
+        self._direccion_busqueda = 1  # 1 derecha, -1 izquierda
+        
         self.textos_canto = [
             "Bengala y carnaval",
             "Argentina nomas",
@@ -205,85 +208,102 @@ class HinchaConBengala(_BaseHinchaExtra):
 
     def update(self, plataformas=None, escaleras=None, barriles=None):
         super().update(plataformas, escaleras, barriles)
-        self._cooldown_bengala -= 1
-        if not self._lanzando_bengala and self._cooldown_bengala <= 0:
-            self._lanzando_bengala = True
-            self._tiempo_lanzamiento = 150
-            self._cooldown_bengala = random.randint(180, 240)
+        
+        # Máquina de estados
+        self._tiempo_estado -= 1
+        
+        if self._estado == 'preparando':
+            # 10 segundos arrodillado quieto
+            self._arrodillado = True
+            self.vel_x = 0
             self._bengala_viajando = False
             self.gritando = True
-            self.tiempo_texto = 150
+            self.tiempo_texto = 300
             self.texto_grito = "DALE BENGALA"
-            if hasattr(self.gestor, 'iniciar_flash'):
-                self.gestor.iniciar_flash((255, 120, 0), 6)
-            if hasattr(self.gestor, 'iniciar_shake'):
-                self.gestor.iniciar_shake(10, 2)
-
-        if self._lanzando_bengala:
-            self._arrodillado = True
-            self._tiempo_lanzamiento -= 1
-            self.vel_x *= 0.7
-
-            if self._tiempo_lanzamiento == 10 and not self._bengala_viajando:
-                self._bengala_viajando = True
-                self._bengala_pos_x = self.rect.centerx + 4
-                self._bengala_pos_y = self.rect.top + 6
+            
+            if self._tiempo_estado <= 0:
+                # Pasar a LANZANDO
+                self._estado = 'lanzando'
+                self._tiempo_estado = 10
                 if hasattr(self.gestor, 'iniciar_flash'):
                     self.gestor.iniciar_flash((255, 150, 0), 8)
                 if hasattr(self.gestor, 'iniciar_shake'):
                     self.gestor.iniciar_shake(12, 3)
-
+                self._bengala_pos_x = self.rect.centerx + 4
+                self._bengala_pos_y = self.rect.top + 6
+        
+        elif self._estado == 'lanzando':
+            # Lanzar la bengala (10 frames)
+            self._arrodillado = True
+            self.vel_x *= 0.7
+            
+            if not self._bengala_viajando:
+                self._bengala_viajando = True
+            
             if self._bengala_viajando:
                 self._bengala_pos_x += 4
                 self._bengala_pos_y -= 5
                 if self._bengala_pos_y < self.rect.top - 120:
                     self._bengala_viajando = False
-
-            if self.gestor.sistema_particulas:
-                if self._bengala_viajando:
-                    ox = int(self._bengala_pos_x)
-                    oy = int(self._bengala_pos_y)
-                    for _ in range(8):
-                        self.gestor.sistema_particulas.emitir(
-                            ox + random.randint(-6, 6),
-                            oy + random.randint(-6, 6),
-                            random.choice([COLORES['naranja'], COLORES['rojo'], COLORES['amarillo']]),
-                            3,
-                            'fuego_artificial',
-                        )
-                    if self.anim_frame % 2 == 0:
-                        self.gestor.sistema_particulas.emitir(
-                            ox + random.randint(-8, 8),
-                            oy + random.randint(-8, 8),
-                            random.choice([COLORES['gris'], COLORES['blanco']]),
-                            4,
-                            'estrella',
-                        )
-                else:
-                    ox = self.rect.centerx + 16
-                    oy = self.rect.top + 8
-                    if self.anim_frame % 5 == 0:
-                        for _ in range(2):
-                            self.gestor.sistema_particulas.emitir(
-                                ox + random.randint(-3, 3),
-                                oy + random.randint(-3, 3),
-                                COLORES['naranja'],
-                                2,
-                                'chispa',
-                            )
-
-            if self._tiempo_lanzamiento <= 0:
-                self._lanzando_bengala = False
-        else:
+            
+            if self._tiempo_estado <= 0:
+                # Pasar a CAMINANDO
+                self._estado = 'caminando'
+                self._tiempo_estado = 750  # 25 segundos
+                self._arrodillado = False
+                self._bengala_viajando = False
+                self._direccion_busqueda = random.choice([1, -1])
+        
+        elif self._estado == 'caminando':
+            # 25 segundos caminando buscando barriles
             self._arrodillado = False
-            if self.gestor.sistema_particulas and self.anim_frame % 10 == 0:
-                self.gestor.sistema_particulas.emitir(
-                    self.rect.centerx + 14,
-                    self.rect.top - 2,
-                    random.choice([COLORES['naranja'], COLORES['amarillo']]),
-                    1,
-                    'chispa',
-                )
+            self.vel_x = 1.5 * self._direccion_busqueda
+            self.gritando = False
+            
+            # Cambiar dirección ocasionalmente
+            if self.anim_frame % 100 == 0:
+                self._direccion_busqueda *= -1
+                self.vel_x = 1.5 * self._direccion_busqueda
+            
+            if self._tiempo_estado <= 0:
+                # Volver a PREPARANDO
+                self._estado = 'preparando'
+                self._tiempo_estado = 300  # 10 segundos
+                self.vel_x = 0
+        
+        # Partículas de la bengala
+        if self.gestor.sistema_particulas:
+            if self._bengala_viajando:
+                ox = int(self._bengala_pos_x)
+                oy = int(self._bengala_pos_y)
+                for _ in range(8):
+                    self.gestor.sistema_particulas.emitir(
+                        ox + random.randint(-6, 6),
+                        oy + random.randint(-6, 6),
+                        random.choice([COLORES['naranja'], COLORES['rojo'], COLORES['amarillo']]),
+                        3,
+                        'fuego_artificial',
+                    )
+                if self.anim_frame % 2 == 0:
+                    self.gestor.sistema_particulas.emitir(
+                        ox + random.randint(-8, 8),
+                        oy + random.randint(-8, 8),
+                        random.choice([COLORES['gris'], COLORES['blanco']]),
+                        4,
+                        'estrella',
+                    )
+            elif self._estado == 'preparando':
+                # Partículas suaves mientras está preparando
+                ox = self.rect.centerx + 16
+                oy = self.rect.top + 8
+                if self.anim_frame % 8 == 0:
+                    self.gestor.sistema_particulas.emitir(
+                        ox + random.randint(-3, 3),
+                        oy + random.randint(-3, 3),
+                        COLORES['naranja'],
+                        2,
+                        'chispa',
+                    )
 
     def dibujar(self, pantalla):
         x, y = self.rect.x, self.rect.y + self.offset_y

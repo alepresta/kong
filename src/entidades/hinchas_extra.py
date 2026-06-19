@@ -328,36 +328,7 @@ class HinchaConBengala(_BaseHinchaExtra):
         else:
             super().dibujar(pantalla)
 
-        # Colita de caballo con rastas (pelo largo atado)
-        if not self._arrodillado:
-            # Nuca/punto de amarre con goma marrón
-            pygame.draw.circle(pantalla, (220, 140, 80), (x + 18, y + 10), 3)
-            pygame.draw.circle(pantalla, (180, 100, 50), (x + 18, y + 10), 1)
-            # Rastas en colita larga (8 rastas gruesas)
-            for i in range(8):
-                angulo_base = i * (360 / 8)
-                largo_rasta = 30 + int(math.sin(self.anim_frame * 0.08 + i) * 4)
-                
-                # Calcular posición de la rasta
-                rad = math.radians(angulo_base + int(math.sin(self.anim_frame * 0.1 + i) * 8))
-                fin_x = int(x + 18 + math.cos(rad) * largo_rasta)
-                fin_y = int(y + 12 + math.sin(rad) * largo_rasta)
-                
-                # Dibujar rasta como línea gruesa
-                pygame.draw.line(pantalla, (20, 20, 20), (x + 18, y + 12), (fin_x, fin_y), 3)
-                # Punta de la rasta
-                pygame.draw.circle(pantalla, (10, 10, 10), (fin_x, fin_y), 2)
-        else:
-            # Rastas cuando está arrodillado (también visibles)
-            pygame.draw.circle(pantalla, (220, 140, 80), (x + 18, y + 8), 3)
-            for i in range(6):
-                angulo_base = i * (360 / 6)
-                largo_rasta = 20 + int(math.sin(self.anim_frame * 0.1 + i) * 3)
-                rad = math.radians(angulo_base + int(math.sin(self.anim_frame * 0.12 + i) * 6))
-                fin_x = int(x + 18 + math.cos(rad) * largo_rasta)
-                fin_y = int(y + 10 + math.sin(rad) * largo_rasta)
-                pygame.draw.line(pantalla, (20, 20, 20), (x + 18, y + 10), (fin_x, fin_y), 2)
-                pygame.draw.circle(pantalla, (10, 10, 10), (fin_x, fin_y), 1)
+        # Cabeza pelada (sin pelo)
 
         glow = pygame.Surface((56, 56), pygame.SRCALPHA)
         pygame.draw.circle(glow, (255, 120, 0, 90), (28, 28), 24)

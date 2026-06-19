@@ -328,12 +328,9 @@ class HinchaConBengala(_BaseHinchaExtra):
         else:
             super().dibujar(pantalla)
 
-        # Cabeza calva: tapa el pelo del sprite base sin cambiar la cara
-        pygame.draw.circle(pantalla, (206, 173, 140), (x + 18, y + 7), 8)
-        pygame.draw.circle(pantalla, (120, 90, 70), (x + 18, y + 7), 8, 1)
-        pygame.draw.circle(pantalla, (225, 195, 165), (x + 16, y + 5), 2)
-        pygame.draw.circle(pantalla, (225, 195, 165), (x + 20, y + 5), 1)
-        pygame.draw.circle(pantalla, (150, 120, 95), (x + 18, y + 8), 1)
+        # Cubre solo el pelo superior del sprite base, sin tocar la cara
+        pygame.draw.ellipse(pantalla, (206, 173, 140), (x + 10, y + 0, 16, 7))
+        pygame.draw.arc(pantalla, (120, 90, 70), (x + 10, y + 0, 16, 7), 3.25, 6.05, 1)
 
         glow = pygame.Surface((56, 56), pygame.SRCALPHA)
         pygame.draw.circle(glow, (255, 120, 0, 90), (28, 28), 24)

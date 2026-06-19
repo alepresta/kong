@@ -15,6 +15,7 @@ from entidades import (
     BarrilCerveza, PoderMate, Princesa, KongCervecero,
     HinchaBorrachito, HinchaArgentina,
     HinchaViejoTambor,
+    HinchaBorrachin, HinchaRandom, HinchaConBengala, HinchaGemelos, HinchaAbuela,
     SistemaParticulas, TextoFlotante
 )
 from niveles.generador import generar_layout_nivel
@@ -38,6 +39,14 @@ class KongArgentino:
         self.nivel = 1
         self.puntuacion = 0
         self.high_score = self._cargar_high_score()
+        self.perfiles_jugador = [
+            {"nombre": "Mario", "personaje": "mario"},
+            {"nombre": "Pibe", "personaje": "hincha"},
+        ]
+        self.indice_perfil = 0
+        self.nombre_jugador = NOMBRE_JUGADOR
+        self.personaje_actual = "mario"
+        self._cargar_perfil()
         self.pausa = False
 
         self.plataformas = []
@@ -49,10 +58,9 @@ class KongArgentino:
         self.argentino = None
         self.borracho = None
         self.hincha = None
+        self.hinchada = []
         self.kong = None
         self.princesa = None
-        self.hincha_argentina = None
-        self.hincha_viejo = None
 
         self._frame_global = 0
         self._tiempo_resultado = 0
@@ -75,6 +83,34 @@ class KongArgentino:
                 pickle.dump(self.high_score, f)
         except Exception:
             pass
+
+    def _cargar_perfil(self):
+        try:
+            if os.path.exists(ARCHIVO_PERFIL):
+                with open(ARCHIVO_PERFIL, 'rb') as f:
+                    data = pickle.load(f)
+                    idx = int(data.get('indice_perfil', 0))
+                    self.indice_perfil = idx % len(self.perfiles_jugador)
+        except Exception:
+            self.indice_perfil = 0
+        self._aplicar_perfil_actual()
+
+    def _guardar_perfil(self):
+        try:
+            with open(ARCHIVO_PERFIL, 'wb') as f:
+                pickle.dump({'indice_perfil': self.indice_perfil}, f)
+        except Exception:
+            pass
+
+    def _aplicar_perfil_actual(self):
+        perfil = self.perfiles_jugador[self.indice_perfil]
+        self.nombre_jugador = perfil['nombre']
+        self.personaje_actual = perfil['personaje']
+
+    def _cambiar_perfil(self, delta):
+        self.indice_perfil = (self.indice_perfil + delta) % len(self.perfiles_jugador)
+        self._aplicar_perfil_actual()
+        self._guardar_perfil()
 
     # ──────────────────────── NIVEL ──────────────────────────────── #
 
@@ -102,25 +138,47 @@ class KongArgentino:
         self.gestor.kong = self.kong
         self.princesa = Princesa(ANCHO//2 + 50, Y_KONG, self.gestor)
         self.argentino = Argentino(100, ALTO - 70, self.gestor)
+        self.argentino.personaje = self.personaje_actual
         self.gestor.argentino = self.argentino
         self.borracho = BorrachoIA(300, ALTO - 70, self.gestor)
-        self.hincha = HinchaBorrachito(hincha_pos[0], hincha_pos[1], self.gestor)
-
-        # ─── CREAR HINCHA ARGENTINA ───
-        self.hincha_argentina = HinchaArgentina(ANCHO//2 - 16, ALTO - 120, self.gestor)
-        self.hincha_argentina.cantando = True
-        self.hincha_argentina.texto_canto = "🇦🇷 ARGENTINA ARGENTINA 🇦🇷"
-        self.hincha_argentina.tiempo_canto = 9999
-
-        # ─── CREAR HINCHA VIEJO CON TAMBOR ───
-        if hincha_viejo_pos:
-            self.hincha_viejo = HinchaViejoTambor(hincha_viejo_pos[0], hincha_viejo_pos[1], self.gestor)
-            print(f"[DEBUG] Hincha viejo creado en ({hincha_viejo_pos[0]}, {hincha_viejo_pos[1]})")
-        else:
-            self.hincha_viejo = None
-            print("[DEBUG] hincha_viejo_pos es None, no se crea")
+        self._crear_hinchada(hincha_pos, hincha_viejo_pos)
 
         self.gestor._fondo_cache.pop(self.nivel, None)
+
+    def _crear_hinchada(self, hincha_pos, hincha_viejo_pos):
+        def limitar_pos(pos):
+            x = max(20, min(ANCHO - 60, int(pos[0])))
+            y = max(80, min(ALTO - 80, int(pos[1])))
+            return x, y
+
+        base_x, base_y = hincha_pos
+        posiciones = [
+            limitar_pos((base_x, base_y)),
+            limitar_pos((ANCHO // 2 - 16, ALTO - 120)),
+            limitar_pos(hincha_viejo_pos if hincha_viejo_pos else (ANCHO // 2 + 50, ALTO - 140)),
+            limitar_pos((base_x + 120, base_y + 20)),
+            limitar_pos((base_x - 120, base_y + 10)),
+            limitar_pos((ANCHO // 2 + 180, ALTO - 200)),
+            limitar_pos((ANCHO // 2 - 200, ALTO - 210)),
+        ]
+
+        tipos = [HinchaBorrachito, HinchaArgentina, HinchaViejoTambor]
+        if self.nivel >= 2:
+            tipos.append(HinchaRandom)
+        if self.nivel >= 3:
+            tipos.append(HinchaConBengala)
+        if self.nivel >= 4:
+            tipos.append(HinchaGemelos)
+        if self.nivel >= 5:
+            tipos.append(HinchaAbuela)
+        if self.nivel >= 6:
+            tipos.append(HinchaBorrachin)
+
+        self.hinchada = []
+        for tipo, pos in zip(tipos, posiciones):
+            self.hinchada.append(tipo(pos[0], pos[1], self.gestor))
+
+        self.hincha = self.hinchada[0] if self.hinchada else None
 
     # ──────────────────────── HELPERS ────────────────────────────── #
 
@@ -177,17 +235,31 @@ class KongArgentino:
                                self.borracho.rect.top - 20, 
                                COLORES['naranja'], 20)
 
-    def _golpear_hincha(self):
-        hx, hy, htop = self.hincha.rect.centerx, self.hincha.rect.centery, self.hincha.rect.top
-        self.hincha.recibir_golpe()
+    def _golpear_hincha(self, hincha_obj):
+        hx, hy, htop = hincha_obj.rect.centerx, hincha_obj.rect.centery, hincha_obj.rect.top
+        if hasattr(hincha_obj, 'recibir_golpe'):
+            hincha_obj.recibir_golpe()
+        elif hasattr(hincha_obj, 'nivel_borrachera'):
+            hincha_obj.nivel_borrachera = max(0, hincha_obj.nivel_borrachera - 1)
         self.emitir(hx, hy, COLORES['rojo'], 15, 'golpe')
         self.emitir(hx, hy, COLORES['amarillo'], 8, 'chispa')
         self.gestor.reproducir_sonido('hincha_golpe')
         self._otorgar_puntos(30, hx, htop, COLORES['celeste'], 
                              texto="👊 ¡GOLPE AL HINCHA! +30")
-        if self.hincha.nivel_borrachera >= 7:
+        if getattr(hincha_obj, 'nivel_borrachera', 0) >= 7:
             self.texto_flotante("🍺 ¡HINCHA RE BORRACHO!", hx, htop - 20,
                                COLORES['naranja'], 20)
+
+    def _iter_hincha_rects(self, hincha_obj):
+        if hasattr(hincha_obj, 'iter_rects'):
+            return hincha_obj.iter_rects()
+        return [hincha_obj.rect]
+
+    def _hincha_colisiona_rect(self, hincha_obj, rect):
+        for hrect in self._iter_hincha_rects(hincha_obj):
+            if hrect.colliderect(rect):
+                return True
+        return False
 
     # ──────────────────────── HUD ────────────────────────────────── #
 
@@ -205,6 +277,8 @@ class KongArgentino:
                                    COLORES['blanco'], 15, 38, sombra=True)
         self.gestor.dibujar_texto(self.pantalla, f"MEJOR: {self.high_score:06d}", 20,
                                    COLORES['oro'], ANCHO//2, 10, centro=True, sombra=True)
+        self.gestor.dibujar_texto(self.pantalla, f"JUGADOR: {self.nombre_jugador}", 16,
+                       COLORES['celeste'], ANCHO//2 + 210, 12, sombra=True)
 
         for i in range(min(self.argentino.vidas, 9)):
             self.gestor.dibujar_corazon(self.pantalla, 30 + i * 34, ALTO - 30)
@@ -279,16 +353,8 @@ class KongArgentino:
         self.princesa.dibujar(surf_juego)
         self.argentino.dibujar(surf_juego)
         self.borracho.dibujar(surf_juego)
-        if self.hincha:
-            self.hincha.dibujar(surf_juego)
-        
-        # ─── DIBUJAR HINCHA ARGENTINA ───
-        if self.hincha_argentina:
-            self.hincha_argentina.dibujar(surf_juego)
-
-        # ─── DIBUJAR HINCHA VIEJO CON TAMBOR ───
-        if self.hincha_viejo:
-            self.hincha_viejo.dibujar(surf_juego)
+        for hincha in self.hinchada:
+            hincha.dibujar(surf_juego)
 
         self.particulas.dibujar(surf_juego)
         self.dibujar_textos()
@@ -322,7 +388,23 @@ class KongArgentino:
         if self.high_score > 0:
             self.gestor.dibujar_texto(self.pantalla, f"🏆 RÉCORD: {self.high_score:06d}", 22,
                                        COLORES['oro'], ANCHO//2, 682, centro=True, sombra=True)
-        return start_rect, exit_rect
+        perfil = self.perfiles_jugador[self.indice_perfil]
+        left_rect = pygame.Rect(ANCHO//2 - 180, 492, 40, 40)
+        right_rect = pygame.Rect(ANCHO//2 + 140, 492, 40, 40)
+        pygame.draw.rect(self.pantalla, COLORES['azul'], left_rect, border_radius=6)
+        pygame.draw.rect(self.pantalla, COLORES['azul'], right_rect, border_radius=6)
+        pygame.draw.rect(self.pantalla, COLORES['celeste'], left_rect, 2, border_radius=6)
+        pygame.draw.rect(self.pantalla, COLORES['celeste'], right_rect, 2, border_radius=6)
+        self.gestor.dibujar_texto(self.pantalla, "<", 28, COLORES['blanco'], left_rect.centerx - 6, left_rect.y + 3)
+        self.gestor.dibujar_texto(self.pantalla, ">", 28, COLORES['blanco'], right_rect.centerx - 6, right_rect.y + 3)
+        self.gestor.dibujar_texto(self.pantalla, "PERFIL", 16, COLORES['gris'], ANCHO//2, 470, centro=True)
+        self.gestor.dibujar_texto(self.pantalla,
+                                  f"{perfil['nombre']}  |  estilo: {perfil['personaje']}",
+                                  20, COLORES['blanco'], ANCHO//2, 500, centro=True, sombra=True)
+        self.gestor.dibujar_texto(self.pantalla,
+                                  "A/D o Flechas: cambiar perfil  |  ENTER: iniciar",
+                                  14, COLORES['gris'], ANCHO//2, 530, centro=True)
+        return start_rect, exit_rect, left_rect, right_rect
 
     def dibujar_game_over(self):
         self.gestor.dibujar_fondo(self.pantalla, self.nivel)
@@ -474,37 +556,8 @@ class KongArgentino:
     def _update_juego(self):
         self.argentino.update(self.plataformas, self.escaleras)
         self.borracho.update(self.plataformas, self.escaleras, self.barriles)
-        
-        if self.hincha:
-            self.hincha.update(self.plataformas, self.escaleras, self.barriles)
-        
-        # ─── ACTUALIZAR HINCHA ARGENTINA ───
-        if self.hincha_argentina:
-            self.hincha_argentina.update(self.plataformas, self.escaleras, self.barriles)
-            
-            # Colisión con barriles
-            for b in self.barriles[:]:
-                if self.hincha_argentina.rect.colliderect(b.rect):
-                    self.hincha_argentina.beber_barril()
-                    self.barriles.remove(b)
-                    self.emitir(b.rect.centerx, b.rect.centery, COLORES['amarillo'], 10, 'explosion')
-                    self._otorgar_puntos(30, b.rect.centerx, b.rect.top, COLORES['celeste'],
-                                          texto="🇦🇷 +30 (Hincha Argentina!)")
-                    break
-
-        # ─── ACTUALIZAR HINCHA VIEJO CON TAMBOR ───
-        if self.hincha_viejo:
-            self.hincha_viejo.update(self.plataformas, self.escaleras, self.barriles)
-
-            # Colisión con barriles
-            for b in self.barriles[:]:
-                if self.hincha_viejo.rect.colliderect(b.rect):
-                    self.hincha_viejo.beber_barril()
-                    self.barriles.remove(b)
-                    self.emitir(b.rect.centerx, b.rect.centery, COLORES['amarillo'], 10, 'explosion')
-                    self._otorgar_puntos(30, b.rect.centerx, b.rect.top, COLORES['celeste'],
-                                         texto="🥁 +30 (Hincha Viejo!)")
-                    break
+        for hincha in self.hinchada:
+            hincha.update(self.plataformas, self.escaleras, self.barriles)
         
         self.princesa.update()
         self.kong.update(self.plataformas)
@@ -575,12 +628,20 @@ class KongArgentino:
                                       texto="🍺 +50 (Borracho!)")
                 continue
 
-            if self.hincha and self.hincha.rect.colliderect(b.rect):
-                self.hincha.beber_barril()
-                self.barriles.remove(b)
-                self.emitir(b.rect.centerx, b.rect.centery, COLORES['amarillo'], 10, 'explosion')
-                self._otorgar_puntos(30, b.rect.centerx, b.rect.top, COLORES['celeste'],
-                                      texto="🍺 +30 (Hincha!)")
+            barril_consumido = False
+            for hincha in self.hinchada:
+                if self._hincha_colisiona_rect(hincha, b.rect):
+                    hincha.beber_barril()
+                    if b in self.barriles:
+                        self.barriles.remove(b)
+                    self.emitir(b.rect.centerx, b.rect.centery, COLORES['amarillo'], 10, 'explosion')
+                    puntos_hincha = getattr(hincha, 'puntos_barril', 30)
+                    texto_hincha = getattr(hincha, 'etiqueta_puntos', "🍺 +30 (Hincha)")
+                    self._otorgar_puntos(puntos_hincha, b.rect.centerx, b.rect.top, COLORES['celeste'],
+                                         texto=texto_hincha)
+                    barril_consumido = True
+                    break
+            if barril_consumido:
                 continue
 
             if b.rect.y > ALTO + 60 or b.rect.x < -60 or b.rect.x > ANCHO + 60:
@@ -626,8 +687,10 @@ class KongArgentino:
             if ataque_rect.colliderect(self.borracho.rect):
                 self._golpear_borracho()
             
-            if self.hincha and ataque_rect.colliderect(self.hincha.rect):
-                self._golpear_hincha()
+            for hincha in self.hinchada:
+                if self._hincha_colisiona_rect(hincha, ataque_rect):
+                    self._golpear_hincha(hincha)
+                    break
 
         # ── Colisión jugador - Kong ──
         if self.argentino.rect.colliderect(self.kong.rect):
@@ -682,6 +745,7 @@ class KongArgentino:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self._guardar_high_score()
+                    self._guardar_perfil()
                     pygame.quit()
                     sys.exit()
 
@@ -711,19 +775,34 @@ class KongArgentino:
 
                     if key == pygame.K_q and self.estado == "menu":
                         self._guardar_high_score()
+                        self._guardar_perfil()
                         pygame.quit()
                         sys.exit()
+
+                    if self.estado == "menu" and key in (pygame.K_LEFT, pygame.K_a):
+                        self._cambiar_perfil(-1)
+                    if self.estado == "menu" and key in (pygame.K_RIGHT, pygame.K_d):
+                        self._cambiar_perfil(1)
+                    if self.estado == "menu" and key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                        self.reiniciar_juego()
 
                 if event.type == pygame.MOUSEBUTTONDOWN and self.estado == "menu":
                     mx, my = pygame.mouse.get_pos()
                     start_rect = pygame.Rect(ANCHO//2 - 120, 548, 240, 55)
                     exit_rect  = pygame.Rect(ANCHO//2 - 120, 616, 240, 55)
+                    left_rect = pygame.Rect(ANCHO//2 - 180, 492, 40, 40)
+                    right_rect = pygame.Rect(ANCHO//2 + 140, 492, 40, 40)
                     if start_rect.collidepoint(mx, my):
                         self.reiniciar_juego()
                     elif exit_rect.collidepoint(mx, my):
                         self._guardar_high_score()
+                        self._guardar_perfil()
                         pygame.quit()
                         sys.exit()
+                    elif left_rect.collidepoint(mx, my):
+                        self._cambiar_perfil(-1)
+                    elif right_rect.collidepoint(mx, my):
+                        self._cambiar_perfil(1)
 
             self.particulas.actualizar()
             self.actualizar_textos()
@@ -737,6 +816,8 @@ class KongArgentino:
 
             elif self.estado == "victoria":
                 self.dibujar_victoria()
+                if self._tiempo_resultado >= DURACION_CELEBRACION_RESCATE:
+                    self.siguiente_nivel()
 
             elif self.estado == "victoria_final":
                 self.dibujar_victoria_final()

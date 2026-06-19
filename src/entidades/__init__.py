@@ -10,3 +10,10 @@ from .objetos import (
 from .particulas import SistemaParticulas, TextoFlotante
 from .hincha_argentina import HinchaArgentina
 from .hincha_viejo import HinchaViejoTambor   # <--- NUEVO
+from .hinchas_extra import (
+    HinchaBorrachin,
+    HinchaRandom,
+    HinchaConBengala,
+    HinchaGemelos,
+    HinchaAbuela,
+)

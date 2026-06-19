@@ -476,9 +476,17 @@ class Argentino(pygame.sprite.Sprite):
             )
 
         # --- CUERPO ---
+        personaje = getattr(self, 'personaje', 'mario')
+        if personaje == 'hincha':
+            color_base = COLORES['blanco']
+            franja = COLORES['celeste']
+        else:
+            color_base = COLORES['celeste']
+            franja = COLORES['blanco']
+
         # Si está pegado al techo, cambiamos el color del cuerpo a amarillo/rojo
-        color_cuerpo = COLORES['amarillo'] if self.pegado_techo else COLORES['celeste']
-        color_blanco = (255, 200, 100) if self.pegado_techo else COLORES['blanco']
+        color_cuerpo = COLORES['amarillo'] if self.pegado_techo else color_base
+        color_blanco = (255, 200, 100) if self.pegado_techo else franja
         
         pygame.draw.rect(pantalla, color_cuerpo, (x, y + 12 + offset_y, 32, 20))
         pygame.draw.rect(pantalla, color_blanco, (x, y + 16 + offset_y, 32, 6))

@@ -6,10 +6,12 @@ Creado por Apresta para Prestalabs
 
 VERSION = "4.0.0"
 NOMBRE_JUEGO = "KONG ARGENTINO"
+NOMBRE_JUGADOR = "Mario"
 
 ANCHO = 1024
 ALTO = 768
 FPS = 60
+DURACION_CELEBRACION_RESCATE = FPS * 10
 
 VIDAS = 3
 VELOCIDAD_JUGADOR = 2
@@ -107,3 +109,4 @@ TAMANO_BORRACHO = TAMANIO_BORRACHO
 
 # ─── HIGH SCORES ──────────────────────────────────────────────────
 ARCHIVO_HIGHSCORE = "kong_scores.dat"
+ARCHIVO_PERFIL = "kong_profile.dat"

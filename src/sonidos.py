@@ -9,7 +9,10 @@ Mejoras v3.0:
 - Caché de sonidos mejorada
 """
 import pygame
-import numpy as np
+try:
+    import numpy as np
+except Exception:
+    np = None
 
 class GeneradorSonidos:
     """Genera sonidos proceduralmente sin archivos externos"""
@@ -19,7 +22,10 @@ class GeneradorSonidos:
     def __init__(self):
         self.sonidos = {}
         self.volumen_maestro = 0.7
-        self._generar_todos()
+        if np is None:
+            print("[Sonidos] numpy no disponible: audio deshabilitado")
+        else:
+            self._generar_todos()
     
     def set_volumen(self, vol):
         """Ajusta volumen maestro 0.0 - 1.0"""

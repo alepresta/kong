@@ -93,9 +93,9 @@ class NivelMixin:
 
         posiciones = generar_posiciones((base_x, base_y), len(tipos))
 
-        # Subir el tambor y la bengala al anteultimo piso.
+        # Ajuste manual de posiciones especiales.
         if len(posiciones) >= 5:
-            posiciones[2] = (ANCHO // 2 + 210, ALTO - 300)  # HinchaViejoTambor
+            posiciones[2] = (ANCHO // 2 + 210, ALTO - 340)  # HinchaViejoTambor (3er piso)
             posiciones[4] = (ANCHO // 2 - 210, ALTO - 280)  # HinchaConBengala
 
         self.hinchada = []

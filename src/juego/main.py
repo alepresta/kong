@@ -151,28 +151,44 @@ class KongArgentino:
             y = max(80, min(ALTO - 80, int(pos[1])))
             return x, y
 
+        def generar_posiciones(base, cantidad):
+            base_x, base_y = base
+            candidatas = [
+                (base_x, base_y),
+                (ANCHO // 2 - 16, ALTO - 120),
+                (hincha_viejo_pos if hincha_viejo_pos else (ANCHO // 2 + 50, ALTO - 140)),
+                (base_x + 120, base_y + 20),
+                (base_x - 120, base_y + 10),
+                (ANCHO // 2 + 180, ALTO - 200),
+                (ANCHO // 2 - 200, ALTO - 210),
+                (ANCHO // 2 + 240, ALTO - 280),
+                (ANCHO // 2 - 250, ALTO - 300),
+                (ANCHO // 2, ALTO - 260),
+            ]
+
+            if cantidad > len(candidatas):
+                extra = cantidad - len(candidatas)
+                for i in range(extra):
+                    ang = (math.pi * 2 * i) / max(extra, 1)
+                    rx = int((ANCHO // 2) + math.cos(ang) * 230)
+                    ry = int((ALTO - 220) + math.sin(ang) * 110)
+                    candidatas.append((rx, ry))
+
+            return [limitar_pos(pos) for pos in candidatas[:cantidad]]
+
         base_x, base_y = hincha_pos
-        posiciones = [
-            limitar_pos((base_x, base_y)),
-            limitar_pos((ANCHO // 2 - 16, ALTO - 120)),
-            limitar_pos(hincha_viejo_pos if hincha_viejo_pos else (ANCHO // 2 + 50, ALTO - 140)),
-            limitar_pos((base_x + 120, base_y + 20)),
-            limitar_pos((base_x - 120, base_y + 10)),
-            limitar_pos((ANCHO // 2 + 180, ALTO - 200)),
-            limitar_pos((ANCHO // 2 - 200, ALTO - 210)),
+        tipos = [
+            HinchaBorrachito,
+            HinchaArgentina,
+            HinchaViejoTambor,
+            HinchaRandom,
+            HinchaConBengala,
+            HinchaGemelos,
+            HinchaAbuela,
+            HinchaBorrachin,
         ]
 
-        tipos = [HinchaBorrachito, HinchaArgentina, HinchaViejoTambor]
-        if self.nivel >= 2:
-            tipos.append(HinchaRandom)
-        if self.nivel >= 3:
-            tipos.append(HinchaConBengala)
-        if self.nivel >= 4:
-            tipos.append(HinchaGemelos)
-        if self.nivel >= 5:
-            tipos.append(HinchaAbuela)
-        if self.nivel >= 6:
-            tipos.append(HinchaBorrachin)
+        posiciones = generar_posiciones((base_x, base_y), len(tipos))
 
         self.hinchada = []
         for tipo, pos in zip(tipos, posiciones):
@@ -434,14 +450,27 @@ class KongArgentino:
 
         t = self._frame_global
         col = COLORES['oro'] if (t // 15) % 2 == 0 else COLORES['amarillo']
-        self.gestor.dibujar_texto(self.pantalla, "🎉 ¡NIVEL COMPLETADO! 🎉", 52, col,
+        self.gestor.dibujar_texto(self.pantalla, "🎉 ¡RESCATASTE A PAULINE! 🎉", 50, col,
                                    ANCHO//2, ALTO//2 - 110, centro=True, sombra=True)
+
+        # Escena corta de rescate para hacer visible el exito del nivel.
+        px = ANCHO // 2
+        py = ALTO // 2 + 25
+        salto = int(math.sin(t * 0.08) * 5)
+        self.princesa.rect.centerx = px - 40
+        self.princesa.rect.centery = py + salto
+        self.princesa.dibujar(self.pantalla)
+        self.argentino.rect.centerx = px + 40
+        self.argentino.rect.centery = py + salto
+        self.argentino.dibujar(self.pantalla)
+        self.gestor.dibujar_copa_mundo(self.pantalla, px, py - 45 + salto, escala=2.0)
+
         self.gestor.dibujar_texto(self.pantalla, f"PUNTOS: {self.puntuacion:06d}", 34,
-                                   COLORES['blanco'], ANCHO//2, ALTO//2 - 40, centro=True, sombra=True)
+                                   COLORES['blanco'], ANCHO//2, ALTO//2 - 85, centro=True, sombra=True)
         self.gestor.dibujar_texto(self.pantalla, f"Nivel {self.nivel + 1} te espera...", 26,
-                                   COLORES['celeste'], ANCHO//2, ALTO//2 + 20, centro=True)
-        self.gestor.dibujar_texto(self.pantalla, "R  siguiente nivel  |  ESC  menú", 24,
-                                   COLORES['blanco'], ANCHO//2, ALTO//2 + 80, centro=True)
+                                   COLORES['celeste'], ANCHO//2, ALTO//2 + 80, centro=True)
+        self.gestor.dibujar_texto(self.pantalla, "Auto avance en 10s  |  R siguiente  |  ESC menú", 22,
+                                   COLORES['blanco'], ANCHO//2, ALTO//2 + 125, centro=True)
         self.particulas.dibujar(self.pantalla)
 
     # ─── NUEVA VERSIÓN DE VICTORIA FINAL CON CELEBRACIÓN MUNDIALISTA ───

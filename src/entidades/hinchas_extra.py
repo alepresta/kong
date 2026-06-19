@@ -192,13 +192,12 @@ class HinchaConBengala(_BaseHinchaExtra):
         self.color_pantalon = (35, 35, 55)
         
         # Máquina de estados
-        self._estado = 'preparando'  # preparando, lanzando, caminando
+        self._estado = 'quieto'  # quieto, caminando
         self._tiempo_estado = 0
         self._arrodillado = False
         self._bengala_viajando = False
         self._bengala_pos_x = 0
         self._bengala_pos_y = 0
-        self._direccion_busqueda = 1  # 1 derecha, -1 izquierda
         
         self.textos_canto = [
             "Bengala y carnaval",
@@ -209,67 +208,42 @@ class HinchaConBengala(_BaseHinchaExtra):
     def update(self, plataformas=None, escaleras=None, barriles=None):
         super().update(plataformas, escaleras, barriles)
         
-        # Máquina de estados
-        self._tiempo_estado -= 1
+        # Contador del ciclo: 10 seg quieto + 25 seg caminando = 35 seg total
+        # A 30fps: 300 + 750 = 1050 frames por ciclo
+        ciclo_tiempo = self.anim_frame % 1050
         
-        if self._estado == 'preparando':
-            # 10 segundos arrodillado quieto
+        # Primeros 300 frames (10 segundos): quieto y lanza bengala
+        if ciclo_tiempo < 300:
+            self._estado = 'quieto'
             self._arrodillado = True
             self.vel_x = 0
-            self._bengala_viajando = False
             self.gritando = True
             self.tiempo_texto = 300
             self.texto_grito = "DALE BENGALA"
             
-            if self._tiempo_estado <= 0:
-                # Pasar a LANZANDO
-                self._estado = 'lanzando'
-                self._tiempo_estado = 10
+            # Lanza al final de los 10 segundos
+            if ciclo_tiempo == 290:
+                self._bengala_viajando = True
+                self._bengala_pos_x = self.rect.centerx + 4
+                self._bengala_pos_y = self.rect.top + 6
                 if hasattr(self.gestor, 'iniciar_flash'):
                     self.gestor.iniciar_flash((255, 150, 0), 8)
                 if hasattr(self.gestor, 'iniciar_shake'):
                     self.gestor.iniciar_shake(12, 3)
-                self._bengala_pos_x = self.rect.centerx + 4
-                self._bengala_pos_y = self.rect.top + 6
         
-        elif self._estado == 'lanzando':
-            # Lanzar la bengala (10 frames)
-            self._arrodillado = True
-            self.vel_x *= 0.7
-            
-            if not self._bengala_viajando:
-                self._bengala_viajando = True
-            
-            if self._bengala_viajando:
-                self._bengala_pos_x += 4
-                self._bengala_pos_y -= 5
-                if self._bengala_pos_y < self.rect.top - 120:
-                    self._bengala_viajando = False
-            
-            if self._tiempo_estado <= 0:
-                # Pasar a CAMINANDO
-                self._estado = 'caminando'
-                self._tiempo_estado = 750  # 25 segundos
-                self._arrodillado = False
-                self._bengala_viajando = False
-                self._direccion_busqueda = random.choice([1, -1])
-        
-        elif self._estado == 'caminando':
-            # 25 segundos caminando buscando barriles
+        # Siguientes 750 frames (25 segundos): caminando normalmente
+        else:
+            self._estado = 'caminando'
             self._arrodillado = False
-            self.vel_x = 1.5 * self._direccion_busqueda
             self.gritando = False
-            
-            # Cambiar dirección ocasionalmente
-            if self.anim_frame % 100 == 0:
-                self._direccion_busqueda *= -1
-                self.vel_x = 1.5 * self._direccion_busqueda
-            
-            if self._tiempo_estado <= 0:
-                # Volver a PREPARANDO
-                self._estado = 'preparando'
-                self._tiempo_estado = 300  # 10 segundos
-                self.vel_x = 0
+            self._bengala_viajando = False
+        
+        # Movimiento de la bengala cuando viaja
+        if self._bengala_viajando:
+            self._bengala_pos_x += 4
+            self._bengala_pos_y -= 5
+            if self._bengala_pos_y < self.rect.top - 120:
+                self._bengala_viajando = False
         
         # Partículas de la bengala
         if self.gestor.sistema_particulas:
@@ -292,8 +266,8 @@ class HinchaConBengala(_BaseHinchaExtra):
                         4,
                         'estrella',
                     )
-            elif self._estado == 'preparando':
-                # Partículas suaves mientras está preparando
+            elif self._estado == 'quieto':
+                # Partículas suaves mientras está quieto preparando
                 ox = self.rect.centerx + 16
                 oy = self.rect.top + 8
                 if self.anim_frame % 8 == 0:

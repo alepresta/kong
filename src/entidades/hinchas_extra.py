@@ -328,16 +328,12 @@ class HinchaConBengala(_BaseHinchaExtra):
         else:
             super().dibujar(pantalla)
 
-        # Cabeza pelada visible con cara marcada
-        pygame.draw.circle(pantalla, (206, 173, 140), (x + 18, y + 9), 8)
-        pygame.draw.circle(pantalla, (120, 90, 70), (x + 18, y + 9), 8, 1)
-        pygame.draw.circle(pantalla, (245, 220, 190), (x + 15, y + 6), 2)
-        pygame.draw.circle(pantalla, (245, 220, 190), (x + 21, y + 6), 2)
-        pygame.draw.circle(pantalla, (30, 20, 20), (x + 15, y + 6), 1)
-        pygame.draw.circle(pantalla, (30, 20, 20), (x + 21, y + 6), 1)
-        pygame.draw.line(pantalla, (90, 60, 45), (x + 18, y + 8), (x + 17, y + 11), 1)
-        pygame.draw.arc(pantalla, (70, 40, 35), (x + 14, y + 9, 8, 6), 0.1, 3.0, 1)
-        pygame.draw.arc(pantalla, (255, 235, 215), (x + 13, y + 4, 10, 6), 3.4, 6.1, 1)
+        # Cabeza calva: tapa el pelo del sprite base sin cambiar la cara
+        pygame.draw.circle(pantalla, (206, 173, 140), (x + 18, y + 7), 8)
+        pygame.draw.circle(pantalla, (120, 90, 70), (x + 18, y + 7), 8, 1)
+        pygame.draw.circle(pantalla, (225, 195, 165), (x + 16, y + 5), 2)
+        pygame.draw.circle(pantalla, (225, 195, 165), (x + 20, y + 5), 1)
+        pygame.draw.circle(pantalla, (150, 120, 95), (x + 18, y + 8), 1)
 
         glow = pygame.Surface((56, 56), pygame.SRCALPHA)
         pygame.draw.circle(glow, (255, 120, 0, 90), (28, 28), 24)

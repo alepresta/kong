@@ -191,6 +191,9 @@ class HinchaConBengala(_BaseHinchaExtra):
         self.color_franja = COLORES['blanco']
         self.color_pantalon = (35, 35, 55)
         self._arrodillado = False
+        self._lanzando_bengala = False
+        self._tiempo_lanzamiento = 0
+        self._cooldown_bengala = random.randint(90, 150)
         self.textos_canto = [
             "Bengala y carnaval",
             "Argentina nomas",
@@ -199,44 +202,96 @@ class HinchaConBengala(_BaseHinchaExtra):
 
     def update(self, plataformas=None, escaleras=None, barriles=None):
         super().update(plataformas, escaleras, barriles)
-        self._arrodillado = (self.anim_frame // 24) % 2 == 0
-        if self.gestor.sistema_particulas and self.anim_frame % 6 == 0:
-            origen_y = self.rect.top + (8 if self._arrodillado else -5)
-            self.gestor.sistema_particulas.emitir(
-                self.rect.centerx + 14,
-                origen_y,
-                random.choice([COLORES['naranja'], COLORES['rojo'], COLORES['amarillo']]),
-                1,
-                'chispa',
-            )
+        self._cooldown_bengala -= 1
+        if not self._lanzando_bengala and self._cooldown_bengala <= 0:
+            self._lanzando_bengala = True
+            self._tiempo_lanzamiento = random.randint(26, 36)
+            self._cooldown_bengala = random.randint(120, 190)
+            self.gritando = True
+            self.tiempo_texto = 40
+            self.texto_grito = "DALE BENGALA"
+            if hasattr(self.gestor, 'iniciar_flash'):
+                self.gestor.iniciar_flash((255, 120, 0), 6)
+            if hasattr(self.gestor, 'iniciar_shake'):
+                self.gestor.iniciar_shake(10, 2)
+
+        if self._lanzando_bengala:
+            self._arrodillado = True
+            self._tiempo_lanzamiento -= 1
+            self.vel_x *= 0.7
+
+            if self.gestor.sistema_particulas:
+                ox = self.rect.centerx + 16
+                oy = self.rect.top + 8
+                for _ in range(3):
+                    self.gestor.sistema_particulas.emitir(
+                        ox + random.randint(-2, 3),
+                        oy + random.randint(-2, 2),
+                        random.choice([COLORES['naranja'], COLORES['rojo'], COLORES['amarillo']]),
+                        2,
+                        'fuego_artificial',
+                    )
+                if self.anim_frame % 3 == 0:
+                    self.gestor.sistema_particulas.emitir(
+                        ox + random.randint(-3, 4),
+                        oy + random.randint(-2, 3),
+                        random.choice([COLORES['gris'], COLORES['blanco']]),
+                        3,
+                        'estrella',
+                    )
+
+            if self._tiempo_lanzamiento <= 0:
+                self._lanzando_bengala = False
+        else:
+            self._arrodillado = False
+            if self.gestor.sistema_particulas and self.anim_frame % 10 == 0:
+                self.gestor.sistema_particulas.emitir(
+                    self.rect.centerx + 14,
+                    self.rect.top - 2,
+                    random.choice([COLORES['naranja'], COLORES['amarillo']]),
+                    1,
+                    'chispa',
+                )
 
     def dibujar(self, pantalla):
         x, y = self.rect.x, self.rect.y + self.offset_y
         super().dibujar(pantalla)
 
-        # Rastas sobre el peinado del sprite base.
-        for i in range(7):
-            dx = -3 + i * 3
-            largo = 8 + (i % 3)
-            pygame.draw.line(pantalla, (45, 28, 20), (x + 12 + dx, y + 1), (x + 11 + dx, y + 1 + largo), 2)
+        # Rastas/trenzas largas negras.
+        for i in range(8):
+            dx = -6 + i * 3
+            largo = 12 + (i % 4) * 2
+            inicio_x = x + 11 + dx
+            inicio_y = y - 1
+            fin_x = inicio_x - (1 if i % 2 == 0 else -1)
+            fin_y = inicio_y + largo
+            pygame.draw.line(pantalla, (10, 10, 12), (inicio_x, inicio_y), (fin_x, fin_y), 2)
+            if i % 3 == 0:
+                pygame.draw.circle(pantalla, (35, 35, 35), (fin_x, fin_y), 1)
 
-        # Pose arrodillada para lanzar bengala (cubrir piernas base y redibujar).
+        # Pose de una sola rodilla al lanzar bengala.
         if self._arrodillado:
             pygame.draw.rect(pantalla, (117, 190, 218), (x + 1, y + 30, 30, 14), border_radius=4)
             pygame.draw.rect(pantalla, COLORES['blanco'], (x + 7, y + 30, 4, 14))
             pygame.draw.rect(pantalla, COLORES['blanco'], (x + 15, y + 30, 4, 14))
             pygame.draw.rect(pantalla, COLORES['blanco'], (x + 23, y + 30, 4, 14))
-            pygame.draw.rect(pantalla, self.color_pantalon, (x + 5, y + 35, 11, 6), border_radius=3)
-            pygame.draw.rect(pantalla, self.color_pantalon, (x + 17, y + 36, 10, 5), border_radius=3)
+            # Pierna de apoyo vertical (pie apoyado)
+            pygame.draw.rect(pantalla, self.color_pantalon, (x + 7, y + 33, 7, 10), border_radius=2)
+            pygame.draw.rect(pantalla, (40, 40, 40), (x + 6, y + 42, 10, 3), border_radius=1)
+            # Pierna contraria arrodillada (rodilla al piso)
+            pygame.draw.rect(pantalla, self.color_pantalon, (x + 18, y + 38, 8, 4), border_radius=2)
+            pygame.draw.rect(pantalla, (40, 40, 40), (x + 24, y + 40, 7, 3), border_radius=1)
 
-        glow = pygame.Surface((40, 40), pygame.SRCALPHA)
-        pygame.draw.circle(glow, (255, 120, 0, 70), (18, 18), 18)
-        pantalla.blit(glow, (x + 16, y - 20))
+        glow = pygame.Surface((56, 56), pygame.SRCALPHA)
+        pygame.draw.circle(glow, (255, 120, 0, 90), (28, 28), 24)
+        pygame.draw.circle(glow, (255, 200, 120, 60), (28, 28), 16)
+        pantalla.blit(glow, (x + 6, y - 30))
         pygame.draw.line(pantalla, (180, 180, 180), (x + 26, y + 18), (x + 31, y + 8), 2)
         pygame.draw.circle(pantalla, COLORES['naranja'], (x + 32, y + 7), 4)
         pygame.draw.circle(pantalla, COLORES['amarillo'], (x + 32, y + 7), 2)
-        pygame.draw.line(pantalla, (255, 140, 0), (x + 32, y + 7), (x + 37, y + 2), 1)
-        pygame.draw.line(pantalla, (255, 220, 120), (x + 32, y + 7), (x + 38, y + 7), 1)
+        pygame.draw.line(pantalla, (255, 140, 0), (x + 32, y + 7), (x + 40, y - 2), 2)
+        pygame.draw.line(pantalla, (255, 220, 120), (x + 32, y + 7), (x + 41, y + 5), 2)
+        pygame.draw.line(pantalla, (255, 70, 0), (x + 32, y + 7), (x + 38, y + 12), 1)
 
 
 class HinchaGemelos(_BaseHinchaExtra):

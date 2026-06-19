@@ -208,11 +208,11 @@ class HinchaConBengala(_BaseHinchaExtra):
         self._cooldown_bengala -= 1
         if not self._lanzando_bengala and self._cooldown_bengala <= 0:
             self._lanzando_bengala = True
-            self._tiempo_lanzamiento = random.randint(26, 36)
-            self._cooldown_bengala = random.randint(120, 190)
+            self._tiempo_lanzamiento = 150
+            self._cooldown_bengala = random.randint(180, 240)
             self._bengala_viajando = False
             self.gritando = True
-            self.tiempo_texto = 40
+            self.tiempo_texto = 150
             self.texto_grito = "DALE BENGALA"
             if hasattr(self.gestor, 'iniciar_flash'):
                 self.gestor.iniciar_flash((255, 120, 0), 6)
@@ -224,49 +224,53 @@ class HinchaConBengala(_BaseHinchaExtra):
             self._tiempo_lanzamiento -= 1
             self.vel_x *= 0.7
 
-            if self._tiempo_lanzamiento <= 10 and not self._bengala_viajando:
+            if self._tiempo_lanzamiento == 10 and not self._bengala_viajando:
                 self._bengala_viajando = True
-                self._bengala_pos_x = self.rect.centerx
-                self._bengala_pos_y = self.rect.top + 8
+                self._bengala_pos_x = self.rect.centerx + 4
+                self._bengala_pos_y = self.rect.top + 6
+                if hasattr(self.gestor, 'iniciar_flash'):
+                    self.gestor.iniciar_flash((255, 150, 0), 8)
+                if hasattr(self.gestor, 'iniciar_shake'):
+                    self.gestor.iniciar_shake(12, 3)
 
             if self._bengala_viajando:
-                self._bengala_pos_x += 5
-                self._bengala_pos_y -= 4
-                if self._bengala_pos_y < self.rect.top - 80:
+                self._bengala_pos_x += 4
+                self._bengala_pos_y -= 5
+                if self._bengala_pos_y < self.rect.top - 120:
                     self._bengala_viajando = False
 
             if self.gestor.sistema_particulas:
                 if self._bengala_viajando:
                     ox = int(self._bengala_pos_x)
                     oy = int(self._bengala_pos_y)
+                    for _ in range(8):
+                        self.gestor.sistema_particulas.emitir(
+                            ox + random.randint(-6, 6),
+                            oy + random.randint(-6, 6),
+                            random.choice([COLORES['naranja'], COLORES['rojo'], COLORES['amarillo']]),
+                            3,
+                            'fuego_artificial',
+                        )
+                    if self.anim_frame % 2 == 0:
+                        self.gestor.sistema_particulas.emitir(
+                            ox + random.randint(-8, 8),
+                            oy + random.randint(-8, 8),
+                            random.choice([COLORES['gris'], COLORES['blanco']]),
+                            4,
+                            'estrella',
+                        )
                 else:
                     ox = self.rect.centerx + 16
                     oy = self.rect.top + 8
-                for _ in range(4):
-                    self.gestor.sistema_particulas.emitir(
-                        ox + random.randint(-4, 4),
-                        oy + random.randint(-4, 4),
-                        random.choice([COLORES['naranja'], COLORES['rojo'], COLORES['amarillo']]),
-                        2,
-                        'fuego_artificial',
-                    )
-                if self.anim_frame % 3 == 0:
-                    self.gestor.sistema_particulas.emitir(
-                        ox + random.randint(-5, 5),
-                        oy + random.randint(-5, 5),
-                        random.choice([COLORES['gris'], COLORES['blanco']]),
-                        3,
-                        'estrella',
-                    )
-                if not self._bengala_viajando and self.anim_frame % 2 == 0:
-                    for _ in range(2):
-                        self.gestor.sistema_particulas.emitir(
-                            ox + random.randint(-3, 3),
-                            oy + random.randint(-3, 3),
-                            COLORES['gris'],
-                            4,
-                            'polvo',
-                        )
+                    if self.anim_frame % 5 == 0:
+                        for _ in range(2):
+                            self.gestor.sistema_particulas.emitir(
+                                ox + random.randint(-3, 3),
+                                oy + random.randint(-3, 3),
+                                COLORES['naranja'],
+                                2,
+                                'chispa',
+                            )
 
             if self._tiempo_lanzamiento <= 0:
                 self._lanzando_bengala = False
@@ -302,22 +306,25 @@ class HinchaConBengala(_BaseHinchaExtra):
         else:
             super().dibujar(pantalla)
 
-        # Colita de caballo (pelo largo atado)
+        # Colita de caballo (pelo largo atado - NEGRO Y LARGO)
         if not self._arrodillado:
-            # Nuca/punto de amarre
-            pygame.draw.circle(pantalla, (180, 160, 140), (x + 18, y + 10), 2)
-            # Colita larga negra cayendo
-            for i in range(12):
-                offset_y = i * 2 + int(math.sin(self.anim_frame * 0.1 + i) * 2)
-                grosor = 2 if i < 6 else 1
-                pygame.draw.line(pantalla, (10, 10, 12), (x + 18, y + 12), (x + 18 + (i % 4 - 2), y + 12 + offset_y), grosor)
+            # Nuca/punto de amarre con goma
+            pygame.draw.circle(pantalla, (220, 140, 80), (x + 18, y + 10), 2)
+            pygame.draw.circle(pantalla, (220, 140, 80), (x + 18, y + 10), 1)
+            # Colita larga negra cayendo (20 líneas para ser muy larga)
+            for i in range(20):
+                offset_y = i * 2.5 + int(math.sin(self.anim_frame * 0.08 + i) * 3)
+                grosor = 2 if i < 10 else 1 if i < 15 else 1
+                x_offset = int(math.sin(self.anim_frame * 0.12 + i) * (1 + i * 0.1))
+                pygame.draw.line(pantalla, (0, 0, 0), (x + 18, y + 12), (x + 18 + x_offset, y + 12 + offset_y), grosor)
         else:
-            # Colita cuando está arrodillado
-            pygame.draw.circle(pantalla, (180, 160, 140), (x + 18, y + 8), 2)
-            for i in range(10):
-                offset_y = i * 2 + int(math.sin(self.anim_frame * 0.1 + i) * 1)
-                grosor = 2 if i < 5 else 1
-                pygame.draw.line(pantalla, (10, 10, 12), (x + 18, y + 10), (x + 16 + (i % 3 - 1), y + 10 + offset_y), grosor)
+            # Colita cuando está arrodillado (también negra y larga)
+            pygame.draw.circle(pantalla, (220, 140, 80), (x + 18, y + 8), 2)
+            for i in range(16):
+                offset_y = i * 2.2 + int(math.sin(self.anim_frame * 0.1 + i) * 2)
+                grosor = 2 if i < 8 else 1
+                x_offset = int(math.sin(self.anim_frame * 0.15 + i) * (0.5 + i * 0.08))
+                pygame.draw.line(pantalla, (0, 0, 0), (x + 18, y + 10), (x + 18 + x_offset, y + 10 + offset_y), grosor)
 
         glow = pygame.Surface((56, 56), pygame.SRCALPHA)
         pygame.draw.circle(glow, (255, 120, 0, 90), (28, 28), 24)
@@ -327,21 +334,28 @@ class HinchaConBengala(_BaseHinchaExtra):
         if self._bengala_viajando:
             bx = int(self._bengala_pos_x)
             by = int(self._bengala_pos_y)
-            pygame.draw.rect(pantalla, (200, 50, 20), (bx - 2, by - 1, 4, 8), border_radius=1)
-            pygame.draw.circle(pantalla, (255, 100, 50), (bx, by - 3), 3)
-            for _ in range(6):
-                ang = random.uniform(0, math.pi * 2)
-                dist = random.uniform(4, 8)
-                px = bx + math.cos(ang) * dist
-                py = by + math.sin(ang) * dist
-                pygame.draw.circle(pantalla, random.choice([COLORES['naranja'], COLORES['amarillo']]), (int(px), int(py)), 2)
+            # Cohete rojo oscuro
+            pygame.draw.rect(pantalla, (180, 40, 20), (bx - 3, by, 6, 12), border_radius=2)
+            pygame.draw.rect(pantalla, (255, 80, 40), (bx - 2, by + 1, 4, 8), border_radius=1)
+            # Punta del cohete naranja
+            pygame.draw.circle(pantalla, (255, 140, 40), (bx, by - 4), 4)
+            pygame.draw.circle(pantalla, (255, 200, 100), (bx, by - 4), 2)
+            # Glow explosivo alrededor
+            glow2 = pygame.Surface((60, 60), pygame.SRCALPHA)
+            pygame.draw.circle(glow2, (255, 120, 0, 120), (30, 30), 25)
+            pygame.draw.circle(glow2, (255, 180, 80, 80), (30, 30), 15)
+            pantalla.blit(glow2, (bx - 30, by - 30))
         else:
-            pygame.draw.line(pantalla, (180, 180, 180), (x + 26, y + 18), (x + 31, y + 8), 2)
-            pygame.draw.circle(pantalla, COLORES['naranja'], (x + 32, y + 7), 4)
-            pygame.draw.circle(pantalla, COLORES['amarillo'], (x + 32, y + 7), 2)
+            # Bengala en mano (reposo)
+            pygame.draw.line(pantalla, (180, 180, 180), (x + 26, y + 18), (x + 31, y + 8), 3)
+            pygame.draw.rect(pantalla, (200, 50, 20), (x + 28, y + 4, 5, 10), border_radius=1)
+            pygame.draw.circle(pantalla, COLORES['naranja'], (x + 32, y + 7), 6)
+            pygame.draw.circle(pantalla, COLORES['amarillo'], (x + 32, y + 7), 3)
+            pygame.draw.circle(pantalla, (255, 200, 100), (x + 32, y + 7), 1)
+            # Líneas de fuego alrededor
             pygame.draw.line(pantalla, (255, 140, 0), (x + 32, y + 7), (x + 40, y - 2), 2)
             pygame.draw.line(pantalla, (255, 220, 120), (x + 32, y + 7), (x + 41, y + 5), 2)
-            pygame.draw.line(pantalla, (255, 70, 0), (x + 32, y + 7), (x + 38, y + 12), 1)
+            pygame.draw.line(pantalla, (255, 70, 0), (x + 32, y + 7), (x + 38, y + 12), 2)
 
 
 class HinchaGemelos(_BaseHinchaExtra):

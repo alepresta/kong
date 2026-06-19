@@ -41,7 +41,10 @@ class KongArgentino(
 ):
     def __init__(self):
         pygame.init()
-        pygame.mixer.init()
+        try:
+            pygame.mixer.init()
+        except pygame.error as e:
+            print(f"[Audio] Deshabilitado (sin dispositivo): {e}")
         pygame.display.set_caption(f"{NOMBRE_JUEGO} - v{VERSION}")
 
         self.pantalla = pygame.display.set_mode((ANCHO, ALTO))
@@ -81,102 +84,114 @@ class KongArgentino(
 
         self._frame_global = 0
         self._tiempo_resultado = 0
+        self._running = True
         self.crear_nivel()
 
     # ──────────────────────── PERSISTENCIA ────────────────────────── #
 
+    def _salir_juego(self):
+        self._guardar_high_score()
+        self._guardar_perfil()
+        self._running = False
 
+    def _procesar_evento(self, event):
+        if event.type == pygame.QUIT:
+            self._salir_juego()
+            return
 
-    def run(self):
-        while True:
-            self.clock.tick(FPS)
-            self._frame_global += 1
-            self._tiempo_resultado += 1
-            self.gestor.tick()
+        if event.type == pygame.KEYDOWN:
+            key = event.key
 
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self._guardar_high_score()
-                    self._guardar_perfil()
-                    pygame.quit()
-                    sys.exit()
+            if key == pygame.K_LEFTBRACKET:
+                self.gestor.generador_sonidos.set_volumen(
+                    self.gestor.generador_sonidos.volumen_maestro - 0.1)
+            if key == pygame.K_RIGHTBRACKET:
+                self.gestor.generador_sonidos.set_volumen(
+                    self.gestor.generador_sonidos.volumen_maestro + 0.1)
 
-                if event.type == pygame.KEYDOWN:
-                    key = event.key
+            if key == pygame.K_ESCAPE:
+                if self.estado in ("jugando", "game_over", "victoria", "victoria_final"):
+                    self.estado = "menu"
+                    self.pausa = False
 
-                    if key == pygame.K_LEFTBRACKET:
-                        self.gestor.generador_sonidos.set_volumen(
-                            self.gestor.generador_sonidos.volumen_maestro - 0.1)
-                    if key == pygame.K_RIGHTBRACKET:
-                        self.gestor.generador_sonidos.set_volumen(
-                            self.gestor.generador_sonidos.volumen_maestro + 0.1)
+            if key == pygame.K_p and self.estado == "jugando":
+                self.pausa = not self.pausa
 
-                    if key == pygame.K_ESCAPE:
-                        if self.estado in ("jugando", "game_over", "victoria", "victoria_final"):
-                            self.estado = "menu"
-                            self.pausa = False
-
-                    if key == pygame.K_p and self.estado == "jugando":
-                        self.pausa = not self.pausa
-
-                    if key == pygame.K_r and self._tiempo_resultado > 30:
-                        if self.estado == "game_over":
-                            self.reiniciar_juego()
-                        elif self.estado == "victoria":
-                            self.siguiente_nivel()
-
-                    if key == pygame.K_q and self.estado == "menu":
-                        self._guardar_high_score()
-                        self._guardar_perfil()
-                        pygame.quit()
-                        sys.exit()
-
-                    if self.estado == "menu" and key in (pygame.K_LEFT, pygame.K_a):
-                        self._cambiar_perfil(-1)
-                    if self.estado == "menu" and key in (pygame.K_RIGHT, pygame.K_d):
-                        self._cambiar_perfil(1)
-                    if self.estado == "menu" and key in (pygame.K_RETURN, pygame.K_KP_ENTER):
-                        self.reiniciar_juego()
-
-                if event.type == pygame.MOUSEBUTTONDOWN and self.estado == "menu":
-                    mx, my = pygame.mouse.get_pos()
-                    start_rect = pygame.Rect(ANCHO//2 - 120, 548, 240, 55)
-                    exit_rect  = pygame.Rect(ANCHO//2 - 120, 616, 240, 55)
-                    left_rect = pygame.Rect(ANCHO//2 - 180, 492, 40, 40)
-                    right_rect = pygame.Rect(ANCHO//2 + 140, 492, 40, 40)
-                    if start_rect.collidepoint(mx, my):
-                        self.reiniciar_juego()
-                    elif exit_rect.collidepoint(mx, my):
-                        self._guardar_high_score()
-                        self._guardar_perfil()
-                        pygame.quit()
-                        sys.exit()
-                    elif left_rect.collidepoint(mx, my):
-                        self._cambiar_perfil(-1)
-                    elif right_rect.collidepoint(mx, my):
-                        self._cambiar_perfil(1)
-
-            self.particulas.actualizar()
-            self.actualizar_textos()
-
-            if self.estado == "menu":
-                self.pantalla.fill((0, 0, 0))
-                self.dibujar_menu()
-
-            elif self.estado == "game_over":
-                self.dibujar_game_over()
-
-            elif self.estado == "victoria":
-                self.dibujar_victoria()
-                if self._tiempo_resultado >= DURACION_CELEBRACION_RESCATE:
+            if key == pygame.K_r and self._tiempo_resultado > 30:
+                if self.estado == "game_over":
+                    self.reiniciar_juego()
+                elif self.estado == "victoria":
                     self.siguiente_nivel()
 
-            elif self.estado == "victoria_final":
-                self.dibujar_victoria_final()
+            if key == pygame.K_q and self.estado == "menu":
+                self._salir_juego()
 
-            elif self.estado == "jugando":
-                if not self.pausa:
-                    self._update_juego()
-                self.dibujar()
+            if self.estado == "menu" and key in (pygame.K_LEFT, pygame.K_a):
+                self._cambiar_perfil(-1)
+            if self.estado == "menu" and key in (pygame.K_RIGHT, pygame.K_d):
+                self._cambiar_perfil(1)
+            if self.estado == "menu" and key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                self.reiniciar_juego()
 
-            pygame.display.flip()
+        if event.type == pygame.MOUSEBUTTONDOWN and self.estado == "menu":
+            mx, my = pygame.mouse.get_pos()
+            start_rect = pygame.Rect(ANCHO//2 - 120, 548, 240, 55)
+            exit_rect  = pygame.Rect(ANCHO//2 - 120, 616, 240, 55)
+            left_rect = pygame.Rect(ANCHO//2 - 180, 492, 40, 40)
+            right_rect = pygame.Rect(ANCHO//2 + 140, 492, 40, 40)
+            if start_rect.collidepoint(mx, my):
+                self.reiniciar_juego()
+            elif exit_rect.collidepoint(mx, my):
+                self._salir_juego()
+            elif left_rect.collidepoint(mx, my):
+                self._cambiar_perfil(-1)
+            elif right_rect.collidepoint(mx, my):
+                self._cambiar_perfil(1)
+
+    def _frame_step(self):
+        self.clock.tick(FPS)
+        self._frame_global += 1
+        self._tiempo_resultado += 1
+        self.gestor.tick()
+
+        for event in pygame.event.get():
+            self._procesar_evento(event)
+
+        self.particulas.actualizar()
+        self.actualizar_textos()
+
+        if self.estado == "menu":
+            self.pantalla.fill((0, 0, 0))
+            self.dibujar_menu()
+
+        elif self.estado == "game_over":
+            self.dibujar_game_over()
+
+        elif self.estado == "victoria":
+            self.dibujar_victoria()
+            if self._tiempo_resultado >= DURACION_CELEBRACION_RESCATE:
+                self.siguiente_nivel()
+
+        elif self.estado == "victoria_final":
+            self.dibujar_victoria_final()
+
+        elif self.estado == "jugando":
+            if not self.pausa:
+                self._update_juego()
+            self.dibujar()
+
+        pygame.display.flip()
+
+    def run(self):
+        self._running = True
+        while self._running:
+            self._frame_step()
+        pygame.quit()
+
+    async def run_web(self):
+        import asyncio
+        self._running = True
+        while self._running:
+            self._frame_step()
+            await asyncio.sleep(0)
+        pygame.quit()

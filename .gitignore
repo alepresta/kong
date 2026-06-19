@@ -9,3 +9,6 @@ venv/
 # OS/editor
 .DS_Store
 .vscode/
+
+# Web build artefacts
+src/build/

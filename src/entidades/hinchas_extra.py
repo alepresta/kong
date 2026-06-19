@@ -18,6 +18,8 @@ class _BaseHinchaExtra(HinchaBorrachito):
 
     def __init__(self, x, y, gestor):
         super().__init__(x, y, gestor)
+        self.rect.width = 32
+        self.rect.height = 40
         self.color_remera = COLORES['celeste']
         self.color_franja = COLORES['blanco']
         self.color_pantalon = (30, 60, 140)
@@ -43,14 +45,15 @@ class _BaseHinchaExtra(HinchaBorrachito):
         franja = franja or self.color_franja
         pantalon = pantalon or self.color_pantalon
         piel = piel or self.color_piel
+        paso = int(math.sin(self.anim_frame * 0.25) * 2)
 
         self.gestor.dibujar_sombra(pantalla, self.rect.centerx, self.rect.bottom, 24, 8)
         pygame.draw.rect(pantalla, remera, (x + 2, y + 12, 16, 18), border_radius=3)
         pygame.draw.rect(pantalla, COLORES['blanco'], (x + 2, y + 16, 16, 4))
         pygame.draw.rect(pantalla, franja, (x + 2, y + 20, 16, 3))
         pygame.draw.circle(pantalla, piel, (x + 10, y + 8), radio)
-        pygame.draw.rect(pantalla, pantalon, (x + 4, y + 30, 4, 8))
-        pygame.draw.rect(pantalla, pantalon, (x + 12, y + 30, 4, 8))
+        pygame.draw.rect(pantalla, pantalon, (x + 4 + paso, y + 30, 4, 8))
+        pygame.draw.rect(pantalla, pantalon, (x + 12 - paso, y + 30, 4, 8))
 
         self._dibujar_rostro(pantalla, x, y)
         self._dibujar_bandera_argentina(pantalla, x, y)
@@ -101,6 +104,8 @@ class HinchaBorrachin(_BaseHinchaExtra):
 
     def __init__(self, x, y, gestor):
         super().__init__(x, y, gestor)
+        self.rect.width = 34
+        self.rect.height = 42
         self.nivel_borrachera = random.randint(7, 9)
         self.color_remera = (190, 80, 70)
         self.color_franja = (250, 190, 120)
@@ -121,6 +126,7 @@ class HinchaBorrachin(_BaseHinchaExtra):
         x = self.rect.x
         y = self.rect.y + self.offset_y + int(math.sin(self.anim_frame * 0.3) * 2)
         self._dibujar_cuerpo_base(pantalla, x, y)
+        pygame.draw.rect(pantalla, (85, 45, 30), (x + 1, y + 13, 20, 6), border_radius=3)
         pygame.draw.rect(pantalla, (120, 70, 30), (x + 15, y + 20, 6, 10), border_radius=2)
         pygame.draw.rect(pantalla, (240, 200, 120), (x + 16, y + 18, 4, 3), border_radius=1)
         pygame.draw.circle(pantalla, (220, 90, 90), (x + 7, y + 8), 1)
@@ -134,6 +140,8 @@ class HinchaRandom(_BaseHinchaExtra):
 
     def __init__(self, x, y, gestor):
         super().__init__(x, y, gestor)
+        self.rect.width = random.choice([30, 32, 34])
+        self.rect.height = random.choice([38, 40, 42])
         self.color_remera = random.choice([
             COLORES['celeste'],
             COLORES['azul'],
@@ -153,6 +161,7 @@ class HinchaRandom(_BaseHinchaExtra):
 
     def dibujar(self, pantalla):
         x, y = self.rect.x, self.rect.y + self.offset_y
+        y += int(math.sin(self.anim_frame * 0.17) * 1)
         self._dibujar_cuerpo_base(
             pantalla,
             x,
@@ -177,6 +186,8 @@ class HinchaConBengala(_BaseHinchaExtra):
 
     def __init__(self, x, y, gestor):
         super().__init__(x, y, gestor)
+        self.rect.width = 34
+        self.rect.height = 41
         self.color_remera = (70, 130, 170)
         self.color_franja = COLORES['blanco']
         self.color_pantalon = (35, 35, 55)
@@ -220,6 +231,9 @@ class HinchaConBengala(_BaseHinchaExtra):
         if self._arrodillado:
             pygame.draw.rect(pantalla, self.color_pantalon, (x + 3, y + 31, 8, 5), border_radius=2)
             pygame.draw.rect(pantalla, self.color_pantalon, (x + 12, y + 31, 7, 4), border_radius=2)
+        else:
+            pygame.draw.rect(pantalla, self.color_pantalon, (x + 3, y + 30, 6, 8), border_radius=2)
+            pygame.draw.rect(pantalla, self.color_pantalon, (x + 12, y + 30, 6, 8), border_radius=2)
 
         pygame.draw.line(pantalla, (180, 180, 180), (x + 18, y + 18), (x + 30, y + 10), 2)
         pygame.draw.circle(pantalla, COLORES['naranja'], (x + 32, y + 9), 4)
@@ -236,6 +250,7 @@ class HinchaGemelos(_BaseHinchaExtra):
     def __init__(self, x, y, gestor):
         super().__init__(x, y, gestor)
         self.rect.width = 20
+        self.rect.height = 40
         self.rect_derecho = pygame.Rect(x + 20, y, 20, self.rect.height)
         self._offset_gemelo = 20
         self.textos_canto = [
@@ -296,6 +311,8 @@ class HinchaAbuela(_BaseHinchaExtra):
 
     def __init__(self, x, y, gestor):
         super().__init__(x, y, gestor)
+        self.rect.width = 34
+        self.rect.height = 46
         self.color_remera = (145, 95, 165)
         self.color_franja = (215, 190, 230)
         self.color_pantalon = (70, 60, 90)
@@ -322,7 +339,8 @@ class HinchaAbuela(_BaseHinchaExtra):
         self.gestor.dibujar_sombra(pantalla, self.rect.centerx, self.rect.bottom, 24, 8)
 
         # Falda larga y poncho de abuela.
-        pygame.draw.rect(pantalla, (120, 80, 145), (x + 3, y + 16, 14, 20), border_radius=4)
+        vaiven = int(math.sin(self.anim_frame * 0.15) * 1)
+        pygame.draw.rect(pantalla, (120, 80, 145), (x + 3, y + 16, 14, 20 + vaiven), border_radius=4)
         pygame.draw.rect(pantalla, COLORES['blanco'], (x + 3, y + 21, 14, 3))
         pygame.draw.rect(pantalla, (185, 140, 200), (x + 1, y + 13, 18, 7), border_radius=4)
 
@@ -339,6 +357,10 @@ class HinchaAbuela(_BaseHinchaExtra):
         pygame.draw.circle(pantalla, (200, 200, 200), (x + 5, y + 24), 3)
         pygame.draw.line(pantalla, COLORES['marron_claro'], (x + 12, y + 21), (x + 18, y + 9), 2)
         pygame.draw.circle(pantalla, COLORES['marron_claro'], (x + 18, y + 9), 2)
+
+        # Baston para silueta de abuela a distancia.
+        pygame.draw.line(pantalla, (130, 90, 55), (x + 21, y + 14), (x + 21, y + 35), 2)
+        pygame.draw.arc(pantalla, (130, 90, 55), (x + 18, y + 11, 6, 6), math.pi / 2, math.pi * 1.6, 2)
 
         self._dibujar_bandera_argentina(pantalla, x, y, lado=-1)
         if self.anim_frame % 20 < 10:

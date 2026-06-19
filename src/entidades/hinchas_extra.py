@@ -96,6 +96,12 @@ class _BaseHinchaExtra(HinchaBorrachito):
             pygame.draw.rect(pantalla, COLORES['celeste'], (bx - flag_w, by + 4, flag_w, 2))
             pygame.draw.circle(pantalla, COLORES['amarillo'], (bx - 5, by + 3), 1)
 
+    def dibujar(self, pantalla):
+        # Mantener el estilo visual del HinchaBorrachito original del juego.
+        super().dibujar(pantalla)
+        x, y = self.rect.x, self.rect.y + self.offset_y
+        self._dibujar_bandera_argentina(pantalla, x, y, lado=self.direccion)
+
 
 class HinchaBorrachin(_BaseHinchaExtra):
     nombre_hincha = "Hincha Borrachin"
@@ -123,14 +129,13 @@ class HinchaBorrachin(_BaseHinchaExtra):
             self.vel_x = max(-3.0, min(3.0, self.vel_x))
 
     def dibujar(self, pantalla):
-        x = self.rect.x
-        y = self.rect.y + self.offset_y + int(math.sin(self.anim_frame * 0.3) * 2)
-        self._dibujar_cuerpo_base(pantalla, x, y)
-        pygame.draw.rect(pantalla, (85, 45, 30), (x + 1, y + 13, 20, 6), border_radius=3)
-        pygame.draw.rect(pantalla, (120, 70, 30), (x + 15, y + 20, 6, 10), border_radius=2)
-        pygame.draw.rect(pantalla, (240, 200, 120), (x + 16, y + 18, 4, 3), border_radius=1)
-        pygame.draw.circle(pantalla, (220, 90, 90), (x + 7, y + 8), 1)
-        pygame.draw.circle(pantalla, (220, 90, 90), (x + 13, y + 8), 1)
+        super().dibujar(pantalla)
+        x, y = self.rect.x, self.rect.y + self.offset_y
+        # Botella en mano y cara colorada.
+        pygame.draw.rect(pantalla, (120, 70, 30), (x + 26, y + 20, 6, 11), border_radius=2)
+        pygame.draw.rect(pantalla, (240, 200, 120), (x + 27, y + 18, 4, 3), border_radius=1)
+        pygame.draw.circle(pantalla, (220, 90, 90), (x + 11, y + 12), 2)
+        pygame.draw.circle(pantalla, (220, 90, 90), (x + 21, y + 12), 2)
 
 
 class HinchaRandom(_BaseHinchaExtra):
@@ -160,23 +165,17 @@ class HinchaRandom(_BaseHinchaExtra):
             self.direccion *= -1
 
     def dibujar(self, pantalla):
+        super().dibujar(pantalla)
         x, y = self.rect.x, self.rect.y + self.offset_y
-        y += int(math.sin(self.anim_frame * 0.17) * 1)
-        self._dibujar_cuerpo_base(
-            pantalla,
-            x,
-            y,
-            remera=self.color_remera,
-            franja=COLORES['blanco'],
-            pantalon=self.color_pantalon,
-        )
+        # Variar remera sobre el sprite base para mantener lenguaje visual común.
+        pygame.draw.rect(pantalla, self.color_remera, (x + 2, y + 14, 28, 6), border_radius=2)
         if self.accesorio == "gorra":
-            pygame.draw.rect(pantalla, (40, 40, 40), (x + 4, y + 1, 12, 4), border_radius=2)
-            pygame.draw.rect(pantalla, (40, 40, 40), (x + 12, y + 4, 6, 2), border_radius=1)
+            pygame.draw.rect(pantalla, (40, 40, 40), (x + 8, y - 3, 16, 4), border_radius=2)
+            pygame.draw.rect(pantalla, (40, 40, 40), (x + 20, y, 7, 2), border_radius=1)
         elif self.accesorio == "vincha":
-            pygame.draw.rect(pantalla, (255, 215, 0), (x + 3, y + 5, 14, 2))
+            pygame.draw.rect(pantalla, (255, 215, 0), (x + 8, y + 6, 16, 2))
         else:
-            pygame.draw.rect(pantalla, (60, 40, 25), (x + 8, y + 11, 5, 2), border_radius=1)
+            pygame.draw.rect(pantalla, (60, 40, 25), (x + 14, y + 16, 6, 2), border_radius=1)
 
 
 class HinchaConBengala(_BaseHinchaExtra):
@@ -213,33 +212,31 @@ class HinchaConBengala(_BaseHinchaExtra):
 
     def dibujar(self, pantalla):
         x, y = self.rect.x, self.rect.y + self.offset_y
+        super().dibujar(pantalla)
+
+        # Rastas sobre el peinado del sprite base.
+        for i in range(7):
+            dx = -3 + i * 3
+            largo = 8 + (i % 3)
+            pygame.draw.line(pantalla, (45, 28, 20), (x + 12 + dx, y + 1), (x + 11 + dx, y + 1 + largo), 2)
+
+        # Pose arrodillada para lanzar bengala (cubrir piernas base y redibujar).
         if self._arrodillado:
-            y += 6
+            pygame.draw.rect(pantalla, (117, 190, 218), (x + 1, y + 30, 30, 14), border_radius=4)
+            pygame.draw.rect(pantalla, COLORES['blanco'], (x + 7, y + 30, 4, 14))
+            pygame.draw.rect(pantalla, COLORES['blanco'], (x + 15, y + 30, 4, 14))
+            pygame.draw.rect(pantalla, COLORES['blanco'], (x + 23, y + 30, 4, 14))
+            pygame.draw.rect(pantalla, self.color_pantalon, (x + 5, y + 35, 11, 6), border_radius=3)
+            pygame.draw.rect(pantalla, self.color_pantalon, (x + 17, y + 36, 10, 5), border_radius=3)
 
         glow = pygame.Surface((40, 40), pygame.SRCALPHA)
         pygame.draw.circle(glow, (255, 120, 0, 70), (18, 18), 18)
         pantalla.blit(glow, (x + 16, y - 20))
-        self._dibujar_cuerpo_base(pantalla, x, y)
-
-        # Rastas
-        for i in range(6):
-            dx = -2 + i * 3
-            largo = 7 + (i % 2)
-            pygame.draw.line(pantalla, (45, 28, 20), (x + 6 + dx, y + 2), (x + 5 + dx, y + 2 + largo), 2)
-
-        # Posicion de arrodillado para lanzar bengala.
-        if self._arrodillado:
-            pygame.draw.rect(pantalla, self.color_pantalon, (x + 3, y + 31, 8, 5), border_radius=2)
-            pygame.draw.rect(pantalla, self.color_pantalon, (x + 12, y + 31, 7, 4), border_radius=2)
-        else:
-            pygame.draw.rect(pantalla, self.color_pantalon, (x + 3, y + 30, 6, 8), border_radius=2)
-            pygame.draw.rect(pantalla, self.color_pantalon, (x + 12, y + 30, 6, 8), border_radius=2)
-
-        pygame.draw.line(pantalla, (180, 180, 180), (x + 18, y + 18), (x + 30, y + 10), 2)
-        pygame.draw.circle(pantalla, COLORES['naranja'], (x + 32, y + 9), 4)
-        pygame.draw.circle(pantalla, COLORES['amarillo'], (x + 32, y + 9), 2)
-        pygame.draw.line(pantalla, (255, 140, 0), (x + 32, y + 9), (x + 37, y + 4), 1)
-        pygame.draw.line(pantalla, (255, 220, 120), (x + 32, y + 9), (x + 38, y + 9), 1)
+        pygame.draw.line(pantalla, (180, 180, 180), (x + 26, y + 18), (x + 31, y + 8), 2)
+        pygame.draw.circle(pantalla, COLORES['naranja'], (x + 32, y + 7), 4)
+        pygame.draw.circle(pantalla, COLORES['amarillo'], (x + 32, y + 7), 2)
+        pygame.draw.line(pantalla, (255, 140, 0), (x + 32, y + 7), (x + 37, y + 2), 1)
+        pygame.draw.line(pantalla, (255, 220, 120), (x + 32, y + 7), (x + 38, y + 7), 1)
 
 
 class HinchaGemelos(_BaseHinchaExtra):
@@ -335,33 +332,19 @@ class HinchaAbuela(_BaseHinchaExtra):
             )
 
     def dibujar(self, pantalla):
+        super().dibujar(pantalla)
         x, y = self.rect.x, self.rect.y + self.offset_y
-        self.gestor.dibujar_sombra(pantalla, self.rect.centerx, self.rect.bottom, 24, 8)
 
-        # Falda larga y poncho de abuela.
-        vaiven = int(math.sin(self.anim_frame * 0.15) * 1)
-        pygame.draw.rect(pantalla, (120, 80, 145), (x + 3, y + 16, 14, 20 + vaiven), border_radius=4)
-        pygame.draw.rect(pantalla, COLORES['blanco'], (x + 3, y + 21, 14, 3))
-        pygame.draw.rect(pantalla, (185, 140, 200), (x + 1, y + 13, 18, 7), border_radius=4)
-
-        # Cabeza y pelo canoso (rodete).
-        pygame.draw.circle(pantalla, self.color_piel, (x + 10, y + 8), 7)
-        pygame.draw.circle(pantalla, (215, 215, 215), (x + 10, y + 1), 5)
-        pygame.draw.circle(pantalla, (180, 180, 180), (x + 15, y + 3), 3)
-        pygame.draw.circle(pantalla, (35, 35, 55), (x + 8, y + 8), 1)
-        pygame.draw.circle(pantalla, (35, 35, 55), (x + 12, y + 8), 1)
-        pygame.draw.arc(pantalla, (140, 60, 70), (x + 7, y + 10, 6, 4), 0, math.pi, 1)
-
-        # Cacerola y cuchara bien visibles.
-        pygame.draw.circle(pantalla, COLORES['gris'], (x + 5, y + 24), 6)
-        pygame.draw.circle(pantalla, (200, 200, 200), (x + 5, y + 24), 3)
-        pygame.draw.line(pantalla, COLORES['marron_claro'], (x + 12, y + 21), (x + 18, y + 9), 2)
+        # Convertir sprite base en abuela: pelo canoso, chal, falda, cacerola.
+        pygame.draw.rect(pantalla, (180, 140, 200), (x + 2, y + 12, 28, 7), border_radius=3)
+        pygame.draw.rect(pantalla, (120, 80, 145), (x + 5, y + 26, 22, 16), border_radius=4)
+        pygame.draw.circle(pantalla, (215, 215, 215), (x + 16, y + 2), 7)
+        pygame.draw.circle(pantalla, (180, 180, 180), (x + 23, y + 5), 4)
+        pygame.draw.circle(pantalla, COLORES['gris'], (x + 4, y + 24), 6)
+        pygame.draw.circle(pantalla, (200, 200, 200), (x + 4, y + 24), 3)
+        pygame.draw.line(pantalla, COLORES['marron_claro'], (x + 11, y + 20), (x + 18, y + 9), 2)
         pygame.draw.circle(pantalla, COLORES['marron_claro'], (x + 18, y + 9), 2)
-
-        # Baston para silueta de abuela a distancia.
-        pygame.draw.line(pantalla, (130, 90, 55), (x + 21, y + 14), (x + 21, y + 35), 2)
-        pygame.draw.arc(pantalla, (130, 90, 55), (x + 18, y + 11, 6, 6), math.pi / 2, math.pi * 1.6, 2)
-
-        self._dibujar_bandera_argentina(pantalla, x, y, lado=-1)
+        pygame.draw.line(pantalla, (130, 90, 55), (x + 28, y + 14), (x + 28, y + 37), 2)
+        pygame.draw.arc(pantalla, (130, 90, 55), (x + 25, y + 11, 6, 6), math.pi / 2, math.pi * 1.6, 2)
         if self.anim_frame % 20 < 10:
-            pygame.draw.circle(pantalla, COLORES['amarillo'], (x + 6, y + 22), 2)
+            pygame.draw.circle(pantalla, COLORES['amarillo'], (x + 4, y + 24), 2)

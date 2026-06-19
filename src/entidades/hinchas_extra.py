@@ -310,9 +310,12 @@ class HinchaConBengala(_BaseHinchaExtra):
     def dibujar(self, pantalla):
         x, y = self.rect.x, self.rect.y + self.offset_y
 
+        # Primero dibujamos el sprite base para conservar su cara original.
+        super().dibujar(pantalla)
+
         if self._arrodillado:
             self.gestor.dibujar_sombra(pantalla, self.rect.centerx, self.rect.bottom, 28, 8)
-            # Cuerpo arrodillado
+            # Cuerpo arrodillado por encima del sprite base
             pygame.draw.rect(pantalla, (117, 190, 218), (x + 3, y + 16, 28, 20), border_radius=3)
             for i in range(2, 30, 8):
                 pygame.draw.rect(pantalla, COLORES['blanco'], (x + i, y + 16, 4, 20))
@@ -325,12 +328,9 @@ class HinchaConBengala(_BaseHinchaExtra):
             # Brazos apuntando a la bengala
             pygame.draw.line(pantalla, (255, 220, 200), (x + 31, y + 22), (x + 38, y + 14), 3)
             pygame.draw.circle(pantalla, (255, 220, 200), (x + 38, y + 14), 3)
-        else:
-            super().dibujar(pantalla)
 
         # Cubre solo el pelo superior del sprite base, sin tocar la cara
-        pygame.draw.ellipse(pantalla, (206, 173, 140), (x + 10, y + 0, 16, 7))
-        pygame.draw.arc(pantalla, (120, 90, 70), (x + 10, y + 0, 16, 7), 3.25, 6.05, 1)
+        pygame.draw.ellipse(pantalla, (255, 220, 200), (x + 5, y + 0, 22, 8))
 
         glow = pygame.Surface((56, 56), pygame.SRCALPHA)
         pygame.draw.circle(glow, (255, 120, 0, 90), (28, 28), 24)

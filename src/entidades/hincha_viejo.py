@@ -41,8 +41,11 @@ class HinchaViejoTambor(pygame.sprite.Sprite):
 
         # Borrachera
         self.nivel_borrachera = random.randint(2, 5)
-        self.estado = "buscando"        # "buscando", "tocando", "celebrando"
+        self.estado = "tocando"        # "buscando", "tocando", "celebrando"
         self.tiempo_estado = 0
+        self.ancla_x = x
+        self.ancla_y = min(y, 90)
+        self.modo_fijo_arriba = True
 
         # Búsqueda de barriles
         self.tiempo_idle = 0
@@ -94,8 +97,31 @@ class HinchaViejoTambor(pygame.sprite.Sprite):
                 if random.random() < 0.4:
                     self._iniciar_canto()
         else:
-            if self.anim_frame % 90 == 0 and random.random() < 0.4:
+            if self.anim_frame % 70 == 0 and random.random() < 0.55:
                 self._iniciar_canto()
+
+        # Modo fijo arriba: no camina, solo rebota y toca el bombo
+        if self.modo_fijo_arriba:
+            self.en_escalera = False
+            self.escalera_actual = None
+            self.subiendo = False
+            self.bajando = False
+            self.vel_x = 0
+            self.vel_y = 0
+            self.en_suelo = True
+            self.rect.x = self.ancla_x
+            if self.estado == "celebrando":
+                salto = int(abs(math.sin(self.anim_frame * 0.28)) * 11)
+                self.rect.y = self.ancla_y - salto
+            else:
+                salto = int(abs(math.sin(self.anim_frame * 0.18)) * 4)
+                self.rect.y = self.ancla_y - salto
+                self.estado = "tocando"
+            self.tiempo_estado = max(self.tiempo_estado - 1, 0)
+            if self.tiempo_estado <= 0:
+                self.estado = "tocando"
+                self.tiempo_estado = 0
+            return
 
         # Detección de escalera
         self.en_escalera = False
@@ -355,6 +381,10 @@ class HinchaViejoTambor(pygame.sprite.Sprite):
         else:
             self.estado = "celebrando"
             self.tiempo_estado = random.randint(40, 90)
+
+        if self.modo_fijo_arriba:
+            self.rect.x = self.ancla_x
+            self.rect.y = self.ancla_y
 
         # Asegurar canto
         self.cantando = True

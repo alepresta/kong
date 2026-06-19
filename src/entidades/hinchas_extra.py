@@ -32,9 +32,11 @@ class _BaseHinchaExtra(HinchaBorrachito):
 
     def update(self, plataformas=None, escaleras=None, barriles=None):
         super().update(plataformas, escaleras, barriles)
-        if not self.gritando and self.anim_frame % 240 == 0 and random.random() < 0.35:
+        if hasattr(self, 'nivel_borrachera') and random.random() < 0.01:
+            self.nivel_borrachera = min(10, self.nivel_borrachera + 1)
+        if not self.gritando and self.anim_frame % 150 == 0 and random.random() < 0.6:
             self.gritando = True
-            self.tiempo_texto = 50
+            self.tiempo_texto = 60
             self.texto_grito = random.choice(self.textos_canto)
 
     def recibir_golpe(self):

@@ -18,6 +18,10 @@ class _BaseHinchaExtra(HinchaBorrachito):
 
     def __init__(self, x, y, gestor):
         super().__init__(x, y, gestor)
+        self.color_remera = COLORES['celeste']
+        self.color_franja = COLORES['blanco']
+        self.color_pantalon = (30, 60, 140)
+        self.color_piel = (255, 220, 200)
         self.textos_canto = [
             "Vamo' Argentina",
             "Messi, Messi",
@@ -34,6 +38,30 @@ class _BaseHinchaExtra(HinchaBorrachito):
     def recibir_golpe(self):
         return super().recibir_golpe()
 
+    def _dibujar_cuerpo_base(self, pantalla, x, y, remera=None, franja=None, pantalon=None, piel=None, radio=8):
+        remera = remera or self.color_remera
+        franja = franja or self.color_franja
+        pantalon = pantalon or self.color_pantalon
+        piel = piel or self.color_piel
+
+        self.gestor.dibujar_sombra(pantalla, self.rect.centerx, self.rect.bottom, 24, 8)
+        pygame.draw.rect(pantalla, remera, (x + 2, y + 12, 16, 18))
+        pygame.draw.rect(pantalla, franja, (x + 2, y + 18, 16, 4))
+        pygame.draw.circle(pantalla, piel, (x + 10, y + 8), radio)
+        pygame.draw.rect(pantalla, pantalon, (x + 4, y + 30, 4, 8))
+        pygame.draw.rect(pantalla, pantalon, (x + 12, y + 30, 4, 8))
+
+        if self.gritando and self.tiempo_texto > 0:
+            self.gestor.dibujar_texto(
+                pantalla,
+                self.texto_grito,
+                13,
+                COLORES['amarillo'],
+                self.rect.centerx,
+                y - 22,
+                centro=True,
+            )
+
 
 class HinchaBorrachin(_BaseHinchaExtra):
     nombre_hincha = "Hincha Borrachin"
@@ -43,11 +71,29 @@ class HinchaBorrachin(_BaseHinchaExtra):
     def __init__(self, x, y, gestor):
         super().__init__(x, y, gestor)
         self.nivel_borrachera = random.randint(7, 9)
+        self.color_remera = (190, 80, 70)
+        self.color_franja = (250, 190, 120)
+        self.color_pantalon = (65, 35, 20)
         self.textos_canto = [
             "No veo nada, pero vamos",
             "Messi te amo",
             "La copa, la copa",
         ]
+
+    def update(self, plataformas=None, escaleras=None, barriles=None):
+        super().update(plataformas, escaleras, barriles)
+        if self.anim_frame % 50 == 0 and random.random() < 0.6:
+            self.vel_x += random.choice([-1.2, -0.8, 0.8, 1.2])
+            self.vel_x = max(-3.0, min(3.0, self.vel_x))
+
+    def dibujar(self, pantalla):
+        x = self.rect.x
+        y = self.rect.y + self.offset_y + int(math.sin(self.anim_frame * 0.3) * 2)
+        self._dibujar_cuerpo_base(pantalla, x, y)
+        pygame.draw.rect(pantalla, (120, 70, 30), (x + 15, y + 20, 6, 10), border_radius=2)
+        pygame.draw.rect(pantalla, (240, 200, 120), (x + 16, y + 18, 4, 3), border_radius=1)
+        pygame.draw.circle(pantalla, (220, 90, 90), (x + 7, y + 8), 1)
+        pygame.draw.circle(pantalla, (220, 90, 90), (x + 13, y + 8), 1)
 
 
 class HinchaRandom(_BaseHinchaExtra):
@@ -61,12 +107,38 @@ class HinchaRandom(_BaseHinchaExtra):
             COLORES['celeste'],
             COLORES['azul'],
             COLORES['blanco'],
+            COLORES['rojo'],
+            COLORES['naranja'],
         ])
+        self.color_pantalon = random.choice([
+            (30, 60, 140),
+            (40, 40, 40),
+            (70, 30, 20),
+        ])
+        self.accesorio = random.choice(["gorra", "vincha", "bigote"])
+
+    def update(self, plataformas=None, escaleras=None, barriles=None):
+        super().update(plataformas, escaleras, barriles)
+        if self.anim_frame % 90 == 0 and random.random() < 0.4:
+            self.direccion *= -1
 
     def dibujar(self, pantalla):
-        super().dibujar(pantalla)
         x, y = self.rect.x, self.rect.y + self.offset_y
-        pygame.draw.rect(pantalla, self.color_remera, (x + 6, y + 18, 20, 8), 2)
+        self._dibujar_cuerpo_base(
+            pantalla,
+            x,
+            y,
+            remera=self.color_remera,
+            franja=COLORES['blanco'],
+            pantalon=self.color_pantalon,
+        )
+        if self.accesorio == "gorra":
+            pygame.draw.rect(pantalla, (40, 40, 40), (x + 4, y + 1, 12, 4), border_radius=2)
+            pygame.draw.rect(pantalla, (40, 40, 40), (x + 12, y + 4, 6, 2), border_radius=1)
+        elif self.accesorio == "vincha":
+            pygame.draw.rect(pantalla, (255, 215, 0), (x + 3, y + 5, 14, 2))
+        else:
+            pygame.draw.rect(pantalla, (60, 40, 25), (x + 8, y + 11, 5, 2), border_radius=1)
 
 
 class HinchaConBengala(_BaseHinchaExtra):
@@ -76,6 +148,9 @@ class HinchaConBengala(_BaseHinchaExtra):
 
     def __init__(self, x, y, gestor):
         super().__init__(x, y, gestor)
+        self.color_remera = (120, 30, 30)
+        self.color_franja = (240, 180, 80)
+        self.color_pantalon = (40, 30, 20)
         self.textos_canto = [
             "Bengala y carnaval",
             "Argentina nomas",
@@ -94,10 +169,15 @@ class HinchaConBengala(_BaseHinchaExtra):
             )
 
     def dibujar(self, pantalla):
-        super().dibujar(pantalla)
+        x, y = self.rect.x, self.rect.y + self.offset_y
+        glow = pygame.Surface((36, 36), pygame.SRCALPHA)
+        pygame.draw.circle(glow, (255, 120, 0, 70), (18, 18), 18)
+        pantalla.blit(glow, (x + 18, y - 20))
+        self._dibujar_cuerpo_base(pantalla, x, y)
         x, y = self.rect.x, self.rect.y + self.offset_y
         pygame.draw.line(pantalla, (180, 180, 180), (x + 30, y + 10), (x + 34, y - 4), 2)
         pygame.draw.circle(pantalla, COLORES['naranja'], (x + 34, y - 4), 4)
+        pygame.draw.circle(pantalla, COLORES['amarillo'], (x + 34, y - 4), 2)
 
 
 class HinchaGemelos(_BaseHinchaExtra):
@@ -163,6 +243,10 @@ class HinchaAbuela(_BaseHinchaExtra):
 
     def __init__(self, x, y, gestor):
         super().__init__(x, y, gestor)
+        self.color_remera = (145, 95, 165)
+        self.color_franja = (215, 190, 230)
+        self.color_pantalon = (70, 60, 90)
+        self.color_piel = (245, 215, 190)
         self.textos_canto = [
             "Traje la cacerola",
             "Vamos mis nietos",
@@ -181,8 +265,12 @@ class HinchaAbuela(_BaseHinchaExtra):
             )
 
     def dibujar(self, pantalla):
-        super().dibujar(pantalla)
         x, y = self.rect.x, self.rect.y + self.offset_y
+        self._dibujar_cuerpo_base(pantalla, x, y, radio=7)
+        x, y = self.rect.x, self.rect.y + self.offset_y
+        pygame.draw.circle(pantalla, (210, 210, 210), (x + 10, y + 2), 5)
+        pygame.draw.circle(pantalla, (180, 180, 180), (x + 14, y + 3), 3)
+        pygame.draw.rect(pantalla, (190, 150, 200), (x + 0, y + 14, 20, 8), border_radius=4)
         pygame.draw.circle(pantalla, COLORES['gris'], (x + 6, y + 22), 6)
         pygame.draw.line(pantalla, COLORES['marron_claro'], (x + 12, y + 20), (x + 16, y + 10), 2)
         if self.anim_frame % 20 < 10:

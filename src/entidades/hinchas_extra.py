@@ -328,7 +328,11 @@ class HinchaConBengala(_BaseHinchaExtra):
         else:
             super().dibujar(pantalla)
 
-        # Cabeza pelada (sin pelo)
+        # Cabeza pelada visible
+        pygame.draw.circle(pantalla, (206, 173, 140), (x + 18, y + 9), 8)
+        pygame.draw.circle(pantalla, (170, 140, 110), (x + 16, y + 7), 3)
+        pygame.draw.circle(pantalla, (225, 195, 165), (x + 20, y + 6), 2)
+        pygame.draw.circle(pantalla, (120, 90, 70), (x + 18, y + 9), 8, 1)
 
         glow = pygame.Surface((56, 56), pygame.SRCALPHA)
         pygame.draw.circle(glow, (255, 120, 0, 90), (28, 28), 24)

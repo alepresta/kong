@@ -2,6 +2,9 @@
 # IMPORTANTE: pygbag analiza el archivo de entrada para decidir que cargar.
 # Importar pygame aqui (nivel superior) hace que pygbag inicialice el modulo
 # pygame real (con init/sprite/font/mixer); sin esto queda un stub vacio.
+# NOTA: NO importar numpy aqui. El wheel pyodide de numpy rompe el driver de
+# video SDL en wasm ("video driver did not add any displays"); los sonidos se
+# generan en Python puro (ver sonidos.py).
 import pygame  # noqa: F401
 import asyncio
 import traceback

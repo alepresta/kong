@@ -9,24 +9,60 @@ Mejoras v3.0:
 - Caché de sonidos mejorada
 """
 import pygame
-try:
-    import numpy as np
-except Exception:
-    np = None
+import math
+import random
+from array import array
+
+
+def _snd_log(msg):
+    """Diagnostico de audio a la consola del navegador (y stdout)."""
+    print(msg)
+    try:
+        import platform
+        platform.window.console.log("[KONG-SND] " + str(msg))
+    except Exception:
+        pass
 
 class GeneradorSonidos:
-    """Genera sonidos proceduralmente sin archivos externos"""
-    
+    """Genera sonidos proceduralmente sin archivos externos.
+
+    Implementacion en Python puro (sin numpy): asi funciona tanto en escritorio
+    como en navegador (pygbag/wasm), donde cargar numpy rompe el driver de video.
+    """
+
     SAMPLE_RATE = 22050
-    
+
     def __init__(self):
         self.sonidos = {}
         self.volumen_maestro = 0.7
-        if np is None:
-            print("[Sonidos] numpy no disponible: audio deshabilitado")
+        # Usar la frecuencia/canales reales con que quedo inicializado el mixer
+        # para que el buffer PCM suene a la velocidad correcta.
+        info = pygame.mixer.get_init()
+        if info:
+            self.sample_rate = info[0]
+            self.channels = info[2]
         else:
-            self._generar_todos()
-    
+            self.sample_rate = self.SAMPLE_RATE
+            self.channels = 2
+        _snd_log("init: modo=python-puro mixer_init=" + str(info))
+        self._generar_todos()
+        _snd_log("sonidos generados: " + str(len(self.sonidos)))
+
+    def _to_sound(self, mono):
+        """Convierte una lista de muestras float [-1..1] (ya con volumen aplicado)
+        en un pygame.Sound con el formato del mixer (int16 intercalado)."""
+        buf = array('h')
+        ch = self.channels
+        for s in mono:
+            v = int(s * 32767.0)
+            if v > 32767:
+                v = 32767
+            elif v < -32767:
+                v = -32767
+            for _ in range(ch):
+                buf.append(v)
+        return pygame.mixer.Sound(buffer=buf.tobytes())
+
     def set_volumen(self, vol):
         """Ajusta volumen maestro 0.0 - 1.0"""
         self.volumen_maestro = max(0.0, min(1.0, vol))
@@ -34,79 +70,118 @@ class GeneradorSonidos:
             snd.set_volume(self.volumen_maestro)
 
     def _tono(self, frecuencias, duracion, volumen=0.3, forma='sine', env='fade'):
-        n = int(self.SAMPLE_RATE * duracion)
-        t = np.linspace(0, duracion, n, False)
-        onda = np.zeros(n)
-        for f in frecuencias:
-            if forma == 'sine':
-                onda += np.sin(2 * np.pi * f * t)
-            elif forma == 'square':
-                onda += np.sign(np.sin(2 * np.pi * f * t))
-            elif forma == 'saw':
-                onda += 2 * (t * f - np.floor(0.5 + t * f))
-            elif forma == 'triangle':
-                onda += 2 * np.abs(2 * (t * f - np.floor(t * f + 0.5))) - 1
-        onda /= max(len(frecuencias), 1)
+        sr = self.sample_rate
+        n = int(sr * duracion)
+        if n <= 0:
+            return self._to_sound([])
+        nf = max(len(frecuencias), 1)
+        dos_pi = 2 * math.pi
+        onda = [0.0] * n
+        for i in range(n):
+            t = i / sr
+            s = 0.0
+            for f in frecuencias:
+                if forma == 'sine':
+                    s += math.sin(dos_pi * f * t)
+                elif forma == 'square':
+                    val = math.sin(dos_pi * f * t)
+                    s += 1.0 if val > 0 else (-1.0 if val < 0 else 0.0)
+                elif forma == 'saw':
+                    s += 2 * (t * f - math.floor(0.5 + t * f))
+                elif forma == 'triangle':
+                    s += 2 * abs(2 * (t * f - math.floor(t * f + 0.5))) - 1
+            onda[i] = s / nf
         if env == 'fade':
             fade = int(n * 0.25)
-            onda[-fade:] *= np.linspace(1, 0, fade)
+            self._fade_out(onda, n, fade)
         elif env == 'attack':
             att = int(n * 0.1)
-            onda[:att] *= np.linspace(0, 1, att)
+            self._fade_in(onda, att)
             fade = int(n * 0.3)
-            onda[-fade:] *= np.linspace(1, 0, fade)
+            self._fade_out(onda, n, fade)
         elif env == 'pluck':
-            # Ataque rápido, decay exponencial
-            decay = np.exp(-t * 10)
-            onda *= decay
-        onda = np.clip(onda * volumen * 32767, -32767, 32767).astype(np.int16)
-        return pygame.sndarray.make_sound(np.column_stack([onda, onda]))
-    
+            for i in range(n):
+                onda[i] *= math.exp(-(i / sr) * 10)
+        for i in range(n):
+            onda[i] *= volumen
+        return self._to_sound(onda)
+
     def _ruido(self, duracion, volumen=0.15, filtro=1.0):
-        n = int(self.SAMPLE_RATE * duracion)
-        onda = np.random.uniform(-1, 1, n)
+        sr = self.sample_rate
+        n = int(sr * duracion)
+        if n <= 0:
+            return self._to_sound([])
+        onda = [random.uniform(-1, 1) for _ in range(n)]
         if filtro < 1.0:
             alpha = filtro
             for i in range(1, n):
-                onda[i] = alpha * onda[i] + (1 - alpha) * onda[i-1]
+                onda[i] = alpha * onda[i] + (1 - alpha) * onda[i - 1]
         fade = int(n * 0.3)
-        onda[-fade:] *= np.linspace(1, 0, fade)
-        onda = np.clip(onda * volumen * 32767, -32767, 32767).astype(np.int16)
-        return pygame.sndarray.make_sound(np.column_stack([onda, onda]))
-    
+        self._fade_out(onda, n, fade)
+        for i in range(n):
+            onda[i] *= volumen
+        return self._to_sound(onda)
+
     def _glissando(self, f_inicio, f_fin, duracion, volumen=0.3):
-        n = int(self.SAMPLE_RATE * duracion)
-        t = np.linspace(0, duracion, n, False)
-        freqs = np.linspace(f_inicio, f_fin, n)
-        fase = np.cumsum(2 * np.pi * freqs / self.SAMPLE_RATE)
-        onda = np.sin(fase)
+        sr = self.sample_rate
+        n = int(sr * duracion)
+        if n <= 0:
+            return self._to_sound([])
+        dos_pi = 2 * math.pi
+        onda = [0.0] * n
+        fase = 0.0
+        for i in range(n):
+            frac = i / (n - 1) if n > 1 else 0.0
+            freq = f_inicio + (f_fin - f_inicio) * frac
+            fase += dos_pi * freq / sr
+            onda[i] = math.sin(fase)
         fade = int(n * 0.15)
-        onda[-fade:] *= np.linspace(1, 0, fade)
-        onda = np.clip(onda * volumen * 32767, -32767, 32767).astype(np.int16)
-        return pygame.sndarray.make_sound(np.column_stack([onda, onda]))
+        self._fade_out(onda, n, fade)
+        for i in range(n):
+            onda[i] *= volumen
+        return self._to_sound(onda)
 
     def _chord(self, notas, duracion, volumen=0.25, env='fade'):
         """Acorde de múltiples notas con volumen balanceado"""
-        n = int(self.SAMPLE_RATE * duracion)
-        t = np.linspace(0, duracion, n, False)
-        onda = sum(np.sin(2 * np.pi * f * t) for f in notas) / len(notas)
+        sr = self.sample_rate
+        n = int(sr * duracion)
+        if n <= 0:
+            return self._to_sound([])
+        nn = len(notas)
+        dos_pi = 2 * math.pi
+        onda = [0.0] * n
+        for i in range(n):
+            t = i / sr
+            s = 0.0
+            for f in notas:
+                s += math.sin(dos_pi * f * t)
+            onda[i] = s / nn
         if env == 'fade':
             fade = int(n * 0.4)
-            onda[-fade:] *= np.linspace(1, 0, fade)
+            self._fade_out(onda, n, fade)
         elif env == 'attack':
             att = int(n * 0.05)
-            onda[:att] *= np.linspace(0, 1, att)
+            self._fade_in(onda, att)
             fade = int(n * 0.35)
-            onda[-fade:] *= np.linspace(1, 0, fade)
-        onda = np.clip(onda * volumen * 32767, -32767, 32767).astype(np.int16)
-        return pygame.sndarray.make_sound(np.column_stack([onda, onda]))
+            self._fade_out(onda, n, fade)
+        for i in range(n):
+            onda[i] *= volumen
+        return self._to_sound(onda)
+
+    @staticmethod
+    def _fade_in(onda, att):
+        if att > 1:
+            for j in range(att):
+                onda[j] *= j / (att - 1)
+
+    @staticmethod
+    def _fade_out(onda, n, fade):
+        if fade > 1:
+            for j in range(fade):
+                onda[n - fade + j] *= 1 - j / (fade - 1)
 
     def _generar_todos(self):
         try:
-            pygame.mixer.pre_init(self.SAMPLE_RATE, -16, 2, 512)
-            if not pygame.mixer.get_init():
-                pygame.mixer.init(self.SAMPLE_RATE, -16, 2, 512)
-            
             # --- Sonidos originales mejorados ---
             self.sonidos['salto']          = self._glissando(300, 600, 0.10, 0.20)
             self.sonidos['salto_escalera'] = self._glissando(250, 450, 0.08, 0.15)
@@ -135,7 +210,7 @@ class GeneradorSonidos:
                 snd.set_volume(self.volumen_maestro)
 
         except Exception as e:
-            print(f"[Sonidos] No se pudo inicializar: {e}")
+            _snd_log("No se pudo inicializar: " + repr(e))
             self.sonidos = {}
     
     def reproducir(self, nombre):

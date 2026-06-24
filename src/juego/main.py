@@ -20,6 +20,10 @@ from entidades import (
 )
 from niveles.generador import generar_layout_nivel
 
+# En navegador (pygbag/wasm) el ritmo lo marca requestAnimationFrame + asyncio;
+# usar clock.tick(FPS) bloqueante ahi produce camara lenta (doble espera).
+_ES_WEB = sys.platform == "emscripten"
+
 
 from juego.persistencia import PersistenciaMixin
 from juego.nivel import NivelMixin
@@ -41,13 +45,15 @@ class KongArgentino(
 ):
     def __init__(self):
         pygame.init()
+        # En web (pygbag/wasm) hay que crear el display ANTES de abrir el audio:
+        # si se inicializa el mixer primero, SDL rompe el driver de video y
+        # set_mode falla con "The video driver did not add any displays".
+        pygame.display.set_caption(f"{NOMBRE_JUEGO} - v{VERSION}")
+        self.pantalla = pygame.display.set_mode((ANCHO, ALTO))
         try:
             pygame.mixer.init()
         except pygame.error as e:
             print(f"[Audio] Deshabilitado (sin dispositivo): {e}")
-        pygame.display.set_caption(f"{NOMBRE_JUEGO} - v{VERSION}")
-
-        self.pantalla = pygame.display.set_mode((ANCHO, ALTO))
         self.clock = pygame.time.Clock()
         self.gestor = GestorGraficos()
         self.particulas = SistemaParticulas(self.gestor)
@@ -149,7 +155,11 @@ class KongArgentino(
                 self._cambiar_perfil(1)
 
     def _frame_step(self):
-        self.clock.tick(FPS)
+        if _ES_WEB:
+            # No bloquear: el navegador ya pacea a ~60fps via rAF.
+            self.clock.tick()
+        else:
+            self.clock.tick(FPS)
         self._frame_global += 1
         self._tiempo_resultado += 1
         self.gestor.tick()

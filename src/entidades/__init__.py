@@ -3,6 +3,43 @@
 KONG ARGENTINO - Entidades del Juego
 Cada clase tiene su propio archivo.
 """
+# En escritorio "import pygame" expone pygame.sprite/font/mixer. En pygbag/wasm
+# no estan disponibles, asi que: (1) se intentan importar y (2) si falta sprite
+# (que solo se usa como clase base, sin Groups), se instala un shim minimo.
+import pygame
+
+for _sub in ("font", "mixer", "sprite"):
+    try:
+        __import__("pygame." + _sub)
+    except Exception:
+        pass
+
+if not hasattr(pygame, "sprite"):
+    import sys as _sys
+    import types as _types
+    _spr = _types.ModuleType("pygame.sprite")
+
+    class Sprite:
+        """Sprite minimo: solo lo que el juego usa (herencia + super().__init__)."""
+        def __init__(self, *groups):
+            self._groups = []
+        def add(self, *groups):
+            pass
+        def remove(self, *groups):
+            pass
+        def kill(self):
+            pass
+        def groups(self):
+            return []
+        def alive(self):
+            return True
+        def update(self, *args, **kwargs):
+            pass
+
+    _spr.Sprite = Sprite
+    pygame.sprite = _spr
+    _sys.modules["pygame.sprite"] = _spr
+
 # Objetos de juego
 from .plataforma import Plataforma
 from .escalera import Escalera

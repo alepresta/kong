@@ -6,8 +6,11 @@ Mejoras v4.2: Copa del Mundo detallada y robusta
 import pygame
 import math
 import random
+import sys
 from constantes import *
 from sonidos import GeneradorSonidos
+
+_ES_WEB = sys.platform == "emscripten"
 
 class GestorGraficos:
     def __init__(self):
@@ -57,7 +60,10 @@ class GestorGraficos:
     def _get_fuente(self, tamaño, bold=True, familia="comicsansms"):
         key = (familia, tamaño, bold)
         if key not in self._fuente_cache:
-            self._fuente_cache[key] = pygame.font.SysFont(familia, tamaño, bold=bold)
+            if _ES_WEB:
+                self._fuente_cache[key] = pygame.font.Font(None, tamaño)
+            else:
+                self._fuente_cache[key] = pygame.font.SysFont(familia, tamaño, bold=bold)
         return self._fuente_cache[key]
 
     def dibujar_texto(self, pantalla, texto, tamaño, color, x, y,

@@ -190,8 +190,20 @@ class KongArgentino(
 
     async def run_web(self):
         import asyncio
+        def _wlog(m):
+            try:
+                import platform
+                platform.window.console.log("[KONG] " + str(m))
+            except Exception:
+                print(m)
         self._running = True
+        _frames = 0
+        _wlog("run_web: bucle iniciado, estado=" + str(self.estado) +
+              " pantalla=" + str(self.pantalla.get_size()))
         while self._running:
             self._frame_step()
+            _frames += 1
+            if _frames in (1, 2, 5, 30, 120):
+                _wlog("run_web: frame " + str(_frames) + " dibujado, estado=" + str(self.estado))
             await asyncio.sleep(0)
         pygame.quit()

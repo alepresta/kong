@@ -3,7 +3,7 @@ KONG ARGENTINO - TEXTO FLOTANTE v2.0
 """
 import pygame
 import math
-from constantes import COLORES, MAX_PARTICULAS
+from config import COLORES, MAX_PARTICULAS
 
 class TextoFlotante:
     def __init__(self, texto, x, y, color, tamaño=22):

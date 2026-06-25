@@ -4,7 +4,7 @@ KONG ARGENTINO - BARRIL CERVEZA
 import pygame
 import random
 import math
-from constantes import *
+from config import *
 
 class BarrilCerveza(pygame.sprite.Sprite):
     def __init__(self, x, y, gestor, es_item=False, vel_mult=1.0):

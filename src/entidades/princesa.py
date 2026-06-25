@@ -4,7 +4,7 @@ KONG ARGENTINO - PRINCESA
 import pygame
 import random
 import math
-from constantes import *
+from config import *
 
 class Princesa(pygame.sprite.Sprite):
     def __init__(self, x, y, gestor):

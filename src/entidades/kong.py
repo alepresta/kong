@@ -4,7 +4,7 @@ KONG ARGENTINO - KONG CERVECERO
 import pygame
 import random
 import math
-from constantes import *
+from config import *
 
 from .barril_cerveza import BarrilCerveza
 

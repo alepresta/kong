@@ -6,7 +6,7 @@ import os
 import random
 import math
 import pickle
-from constantes import *
+from config import *
 
 class EstadosMixin:
     def reiniciar_juego(self):

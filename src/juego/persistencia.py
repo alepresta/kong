@@ -6,7 +6,7 @@ import os
 import random
 import math
 import pickle
-from constantes import *
+from config import *
 
 class PersistenciaMixin:
     def _cargar_high_score(self):

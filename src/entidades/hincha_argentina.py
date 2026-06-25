@@ -15,8 +15,8 @@ Personaje femenino hincha con:
 import pygame
 import random
 import math
-from constantes import ANCHO, ALTO, COLORES, GRAVEDAD, MULTIPLICADOR_GRAVEDAD_BORRACHO
-from constantes import VEL_MAX_CAIDA_BORRACHO, TIEMPO_PEGADO_TECHO
+from config import ANCHO, ALTO, COLORES, GRAVEDAD, MULTIPLICADOR_GRAVEDAD_BORRACHO
+from config import VEL_MAX_CAIDA_BORRACHO, TIEMPO_PEGADO_TECHO
 
 class HinchaArgentina(pygame.sprite.Sprite):
     """Hincha argentina femenina con bandera y cánticos - Versión mejorada"""

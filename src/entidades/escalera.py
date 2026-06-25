@@ -4,7 +4,7 @@ KONG ARGENTINO - ESCALERA
 import pygame
 import random
 import math
-from constantes import *
+from config import *
 
 class Escalera(pygame.sprite.Sprite):
     def __init__(self, x, y, alto, gestor):

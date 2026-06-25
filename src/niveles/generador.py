@@ -2,7 +2,7 @@
 """
 KONG ARGENTINO - GENERADOR DE NIVELES
 """
-from constantes import ANCHO, ALTO
+from config import ANCHO, ALTO
 
 def generar_layout_nivel(nivel):
     """Devuelve (plataformas_data, escaleras_data, cervezas_pos, mates_pos, hincha_pos, hincha_viejo_pos)"""

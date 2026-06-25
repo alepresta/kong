@@ -1,14 +1,6 @@
-# Python bytecode
+```
 __pycache__/
-*.py[cod]
-
-# Virtual environments
-.venv/
-venv/
-
-# OS/editor
-.DS_Store
-.vscode/
-
-# Web build artefacts
-src/build/
+*.pyc
+*.pyo
+*.pyd
+```

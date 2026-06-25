@@ -4,7 +4,7 @@ KONG ARGENTINO - SISTEMA DE PARTÍCULAS v2.0
 import pygame
 import random
 import math
-from constantes import COLORES, MAX_PARTICULAS
+from config import COLORES, MAX_PARTICULAS
 
 class SistemaParticulas:
     def __init__(self, gestor):

@@ -8,7 +8,7 @@ import os
 import random
 import math
 import pickle
-from constantes import *
+from config import *
 from gestor_graficos import GestorGraficos
 from entidades import (
     Argentino, BorrachoIA, Plataforma, Escalera,

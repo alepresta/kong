@@ -13,8 +13,8 @@ Personaje veterano: barba blanca, camiseta argentina, tambor de hinchada.
 import pygame
 import math
 import random
-from constantes import ANCHO, ALTO, COLORES, GRAVEDAD, MULTIPLICADOR_GRAVEDAD_BORRACHO
-from constantes import VEL_MAX_CAIDA_BORRACHO, TIEMPO_PEGADO_TECHO
+from config import ANCHO, ALTO, COLORES, GRAVEDAD, MULTIPLICADOR_GRAVEDAD_BORRACHO
+from config import VEL_MAX_CAIDA_BORRACHO, TIEMPO_PEGADO_TECHO
 
 
 class HinchaViejoTambor(pygame.sprite.Sprite):

@@ -4,7 +4,7 @@ KONG ARGENTINO - HinchaBorrachin
 import math
 import random
 import pygame
-from constantes import COLORES
+from config import COLORES
 from .base_hincha_extra import _BaseHinchaExtra
 
 class HinchaBorrachin(_BaseHinchaExtra):

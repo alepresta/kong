@@ -6,7 +6,7 @@ import os
 import random
 import math
 import pickle
-from constantes import *
+from config import *
 
 class PantallasMixin:
     def dibujar(self):

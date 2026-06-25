@@ -4,7 +4,7 @@ KONG ARGENTINO - PODER MATE
 import pygame
 import random
 import math
-from constantes import *
+from config import *
 
 class PoderMate(pygame.sprite.Sprite):
     def __init__(self, x, y, gestor):

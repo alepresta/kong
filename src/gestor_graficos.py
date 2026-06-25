@@ -7,8 +7,8 @@ import pygame
 import math
 import random
 import sys
-from constantes import *
-from sonidos import GeneradorSonidos
+from config import *
+from audio import GeneradorSonidos
 
 _ES_WEB = sys.platform == "emscripten"
 

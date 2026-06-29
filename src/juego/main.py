@@ -19,6 +19,7 @@ from entidades import (
     SistemaParticulas, TextoFlotante
 )
 from niveles.generador import generar_layout_nivel
+from controles_tactiles import ControlTactil
 
 # En navegador (pygbag/wasm) el ritmo lo marca requestAnimationFrame + asyncio;
 # usar clock.tick(FPS) bloqueante ahi produce camara lenta (doble espera).
@@ -60,6 +61,9 @@ class KongArgentino(
         self.gestor.particulas = self.particulas.particulas
         self.gestor.sistema_particulas = self.particulas
         self.textos_flotantes = []
+        
+        # Controles táctiles para móvil
+        self.controles_tactiles = ControlTactil()
 
         self.estado = "menu"
         self.nivel = 1
@@ -165,6 +169,8 @@ class KongArgentino(
         self.gestor.tick()
 
         for event in pygame.event.get():
+            # Procesar eventos táctiles primero
+            self.controles_tactiles.procesar_evento(event)
             self._procesar_evento(event)
 
         self.particulas.actualizar()

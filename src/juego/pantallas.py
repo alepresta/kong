@@ -38,6 +38,9 @@ class PantallasMixin:
         self.pantalla.blit(surf_juego, (ox, oy))
         self.dibujar_hud()
         self.gestor.aplicar_flash(self.pantalla)
+        
+        # Dibujar controles táctiles en modo juego
+        self.controles_tactiles.dibujar(self.pantalla)
 
         if self.pausa:
             s = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)

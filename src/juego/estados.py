@@ -41,7 +41,9 @@ class EstadosMixin:
     # ──────────────────────── UPDATE ─────────────────────────────── #
 
     def _update_juego(self):
-        self.argentino.update(self.plataformas, self.escaleras)
+        # Obtener controles táctiles y pasarlos al jugador
+        teclas_tactiles = self.controles_tactiles.get_teclas()
+        self.argentino.update(self.plataformas, self.escaleras, teclas_tactiles)
         self.borracho.update(self.plataformas, self.escaleras, self.barriles)
         for hincha in self.hinchada:
             hincha.update(self.plataformas, self.escaleras, self.barriles)

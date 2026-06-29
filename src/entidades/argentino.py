@@ -119,8 +119,17 @@ class Argentino(pygame.sprite.Sprite):
             return True
         return False
 
-    def update(self, plataformas, escaleras):
+    def update(self, plataformas, escaleras, teclas_tactiles=None):
         teclas = pygame.key.get_pressed()
+        
+        # Fusionar controles táctiles con teclado
+        if teclas_tactiles:
+            teclas_fusionadas = list(teclas)
+            for key, presionado in teclas_tactiles.items():
+                if presionado:
+                    teclas_fusionadas[key] = True
+            teclas = teclas_fusionadas
+        
         self.anim_frame += 1
         self.offset_y = math.sin(self.anim_frame * 0.1) * 2 if not self.en_suelo else 0
         

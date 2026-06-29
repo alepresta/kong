@@ -1,0 +1,102 @@
+[gd_scene load_steps=5 format=3 uid="uid://main_scene"]
+
+[ext_resource type="Script" path="res://scripts/juego_principal.gd" id="1_juego"]
+[ext_resource type="Script" path="res://scripts/controles_tactiles.gd" id="2_controles"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]
+size = Vector2(512, 768)
+
+[node name="JuegoKongArgentino" type="Node2D"]
+script = ExtResource("1_juego")
+
+[node name="Plataformas" type="TileMapLayer" parent="."]
+
+[node name="Escaleras" type="TileMapLayer" parent="."]
+
+[node name="Jugador" type="CharacterBody2D" parent="."]
+position = Vector2(100, 668)
+collision_layer = 1
+collision_mask = 2
+
+[node name="Sprite2D" type="Sprite2D" parent="Jugador"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Jugador"]
+shape = SubResource("RectangleShape2D_1")
+
+[node name="AreaAtaque" type="Area2D" parent="Jugador"]
+monitoring = false
+
+[node name="RaycastSuelo" type="RayCast2D" parent="Jugador"]
+target_position = Vector2(0, 25)
+
+[node name="RaycastEscalera" type="RayCast2D" parent="Jugador"]
+target_position = Vector2(0, 25)
+
+[node name="Barriles" type="Node2D" parent="."]
+
+[node name="Hinchada" type="Node2D" parent="."]
+
+[node name="Items" type="Node2D" parent="."]
+
+[node name="Kong" type="Area2D" parent="."]
+position = Vector2(512, 100)
+
+[node name="Princesa" type="Area2D" parent="."]
+position = Vector2(512, 150)
+
+[node name="HUD" type="CanvasLayer" parent="."]
+layer = 1
+
+[node name="Puntuacion" type="Label" parent="HUD"]
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 300.0
+offset_bottom = 50.0
+text = "PUNTOS: 0"
+
+[node name="Vidas" type="Label" parent="HUD"]
+offset_left = 20.0
+offset_top = 60.0
+offset_right = 200.0
+offset_bottom = 90.0
+text = "VIDAS: 3"
+
+[node name="Nivel" type="Label" parent="HUD"]
+offset_left = 20.0
+offset_top = 100.0
+offset_right = 200.0
+offset_bottom = 130.0
+text = "NIVEL: 1"
+
+[node name="HighScore" type="Label" parent="HUD"]
+offset_left = 20.0
+offset_top = 140.0
+offset_right = 200.0
+offset_bottom = 170.0
+text = "RECORD: 0"
+
+[node name="ControlesTactiles" type="CanvasLayer" parent="."]
+layer = 2
+script = ExtResource("2_controles")
+
+[node name="JoystickBase" type="Sprite2D" parent="ControlesTactiles"]
+position = Vector2(150, 618)
+
+[node name="JoystickMano" type="Sprite2D" parent="ControlesTactiles"]
+position = Vector2(150, 618)
+
+[node name="BotonSalto" type="Button" parent="ControlesTactiles"]
+offset_left = 824.0
+offset_top = 648.0
+offset_right = 904.0
+offset_bottom = 728.0
+text = "🦘"
+
+[node name="BotonAtaque" type="Button" parent="ControlesTactiles"]
+offset_left = 924.0
+offset_top = 648.0
+offset_right = 1004.0
+offset_bottom = 728.0
+text = "💥"
+
+[connection signal="body_entered" from="Jugador/AreaAtaque" to="Jugador" method="_on_area_ataque_body_entered"]

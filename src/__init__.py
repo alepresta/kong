@@ -1,3 +1,0 @@
-"""
-KONG ARGENTINO - Paquete Principal
-"""
